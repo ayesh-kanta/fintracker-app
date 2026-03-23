@@ -220,7 +220,23 @@ tbody tr:hover { background: var(--bg); }
 .account-type { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 14px; }
 .account-spent { font-family: var(--fh); font-size: 22px; font-weight: 700; color: var(--ink); }
 .account-spent-label { font-size: 11px; color: var(--ink3); margin-top: 2px; }
+.limit-bar-track { background: var(--bg2); border-radius: 6px; height: 7px; overflow: hidden; margin: 10px 0 5px; }
+.limit-bar-fill  { height: 100%; border-radius: 6px; transition: width 0.5s ease; }
+.limit-row { display: flex; justify-content: space-between; font-size: 11px; color: var(--ink3); margin-bottom: 4px; }
+.limit-available { font-size: 13px; font-weight: 700; }
+/* Friend × Account breakdown table */
+.breakdown-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.breakdown-table th { padding: 9px 14px; text-align: left; font-size: 11px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: var(--ink3); background: var(--bg2); border-bottom: 1px solid var(--border); white-space: nowrap; }
+.breakdown-table td { padding: 11px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.breakdown-table tr:last-child td { border-bottom: none; }
+.breakdown-table tbody tr:hover { background: var(--bg); }
 .account-actions { display: flex; gap: 6px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+
+/* ── LIMIT / BALANCE BAR ── */
+.limit-bar-track { background: var(--bg2); border-radius: 6px; height: 7px; overflow: hidden; margin: 8px 0 4px; }
+.limit-bar-fill  { height: 100%; border-radius: 6px; transition: width 0.5s ease; }
+.limit-row { display: flex; justify-content: space-between; font-size: 11px; color: var(--ink3); margin-bottom: 2px; }
+.limit-label { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink4); margin-bottom: 4px; margin-top: 12px; }
 
 /* ── FILTER BAR ── */
 .filter-bar { display: flex; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; align-items: center; }
@@ -399,8 +415,8 @@ async function seedIfEmpty(userId) {
   const f1 = await addDoc(collection(db, 'friends'), { userId, name: 'Amit Sharma', phone: '9876543001', color: PALETTE[0] });
   const f2 = await addDoc(collection(db, 'friends'), { userId, name: 'Priya Patel',  phone: '9876543002', color: PALETTE[2] });
 
-  const a1 = await addDoc(collection(db, 'accounts'), { userId, name: 'HDFC Credit Card', type: 'credit_card',   color: PALETTE[1] });
-  const a2 = await addDoc(collection(db, 'accounts'), { userId, name: 'SBI Savings',       type: 'bank_account', color: PALETTE[3] });
+  const a1 = await addDoc(collection(db, 'accounts'), { userId, name: 'HDFC Credit Card', type: 'credit_card',   color: PALETTE[1], limit: 100000 });
+  const a2 = await addDoc(collection(db, 'accounts'), { userId, name: 'SBI Savings',       type: 'bank_account', color: PALETTE[3], balance: 50000 });
 
   const txns = [
     { userId, friendId: f1.id, accountId: a1.id, type: 'expense', amount: 3200,  date: '2026-01-15', note: 'Dinner at Mainland China' },
@@ -583,7 +599,7 @@ function AppShell({ user, onLogout }) {
         {tab === 'dashboard'    && <Dashboard    user={user} friends={friends} accounts={accounts} transactions={transactions} setTab={setTab} />}
         {tab === 'transactions' && <Transactions user={user} friends={friends} accounts={accounts} transactions={transactions} showToast={showToast} />}
         {tab === 'friends'      && <Friends      user={user} friends={friends} transactions={transactions} showToast={showToast} />}
-        {tab === 'accounts'     && <Accounts     user={user} accounts={accounts} transactions={transactions} showToast={showToast} />}
+        {tab === 'accounts'     && <Accounts     user={user} accounts={accounts} transactions={transactions} friends={friends} showToast={showToast} />}
         {tab === 'insights'     && <Insights     friends={friends} accounts={accounts} transactions={transactions} />}
       </div>
     </div>
@@ -647,6 +663,61 @@ function Dashboard({ user, friends, accounts, transactions, setTab }) {
           <div className="stat-sub">{accounts.length} account{accounts.length !== 1 ? 's' : ''} linked</div>
         </div>
       </div>
+
+      {/* Account Credit/Balance Status */}
+      {accounts.some(a => a.limit || a.balance != null) && (
+        <div style={{ marginBottom: 28 }}>
+          <div style={{ fontFamily: 'var(--fh)', fontWeight: 700, fontSize: 16, color: 'var(--ink)', marginBottom: 14 }}>Account Status</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
+            {accounts.map(a => {
+              const spent    = transactions.filter(t => t.accountId === a.id && t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0);
+              const received = transactions.filter(t => t.accountId === a.id && t.type === 'payment').reduce((s, t) => s + Number(t.amount), 0);
+              const net = spent - received;
+              if (a.type === 'credit_card' && a.limit) {
+                const avail = a.limit - net;
+                const pct   = Math.min(100, (net / a.limit) * 100);
+                const color = pct >= 90 ? 'var(--red)' : pct >= 70 ? 'var(--amber)' : 'var(--indigo)';
+                return (
+                  <div key={a.id} className="stat-card" style={{ padding: 16 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                      <span style={{ fontSize: 16 }}>💳</span>
+                      <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--ink2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.name}</span>
+                    </div>
+                    <div className="limit-bar-track" style={{ marginBottom: 8 }}>
+                      <div className="limit-bar-fill" style={{ width: `${pct}%`, background: color }} />
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+                      <span style={{ color: 'var(--ink3)' }}>Used: {fmt(net)}</span>
+                      <span style={{ fontWeight: 700, color: avail < 0 ? 'var(--red)' : 'var(--green)' }}>Free: {fmt(Math.max(0, avail))}</span>
+                    </div>
+                    {pct >= 90 && <div style={{ fontSize: 11, color: 'var(--red)', marginTop: 5, fontWeight: 600 }}>⚠️ Almost at limit!</div>}
+                  </div>
+                );
+              }
+              if (a.type === 'bank_account' && a.balance != null) {
+                const rem = a.balance - net;
+                const pct = Math.min(100, (net / a.balance) * 100);
+                return (
+                  <div key={a.id} className="stat-card" style={{ padding: 16 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                      <span style={{ fontSize: 16 }}>🏦</span>
+                      <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--ink2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.name}</span>
+                    </div>
+                    <div className="limit-bar-track" style={{ marginBottom: 8 }}>
+                      <div className="limit-bar-fill" style={{ width: `${pct}%`, background: 'var(--green)' }} />
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+                      <span style={{ color: 'var(--ink3)' }}>Spent: {fmt(net)}</span>
+                      <span style={{ fontWeight: 700, color: rem < 0 ? 'var(--red)' : 'var(--green)' }}>Left: {fmt(Math.max(0, rem))}</span>
+                    </div>
+                  </div>
+                );
+              }
+              return null;
+            })}
+          </div>
+        </div>
+      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
         {/* Friend balances */}
@@ -1042,22 +1113,27 @@ function Friends({ user, friends, transactions, showToast }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // ─── ACCOUNTS ─────────────────────────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════════════════
-function Accounts({ user, accounts, transactions, showToast }) {
+function Accounts({ user, accounts, transactions, friends, showToast }) {
   const [showForm, setShowForm] = useState(false);
   const [editAcc, setEditAcc]   = useState(null);
-  const [form, setForm] = useState({ name: '', type: 'credit_card' });
+  const [form, setForm] = useState({ name: '', type: 'credit_card', limit: '', balance: '' });
   const [saving, setSaving] = useState(false);
+  const [expandAcc, setExpandAcc] = useState(null); // which account's friend breakdown is open
   const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
 
-  const openAdd  = () => { setForm({ name: '', type: 'credit_card' }); setEditAcc(null); setShowForm(true); };
-  const openEdit = (a) => { setForm({ name: a.name, type: a.type }); setEditAcc(a); setShowForm(true); };
+  const openAdd  = () => { setForm({ name: '', type: 'credit_card', limit: '', balance: '' }); setEditAcc(null); setShowForm(true); };
+  const openEdit = (a) => { setForm({ name: a.name, type: a.type, limit: a.limit ? String(a.limit) : '', balance: a.balance ? String(a.balance) : '' }); setEditAcc(a); setShowForm(true); };
 
   const submit = async (e) => {
     e.preventDefault();
     if (!form.name) { alert('Enter a name'); return; }
     setSaving(true);
     try {
-      const data = { userId: user.id, name: form.name, type: form.type, color: colorFor(form.name) };
+      const data = {
+        userId: user.id, name: form.name, type: form.type, color: colorFor(form.name),
+        limit:   form.type === 'credit_card'  && form.limit   ? parseFloat(form.limit)   : null,
+        balance: form.type === 'bank_account' && form.balance ? parseFloat(form.balance) : null,
+      };
       if (editAcc) { await updateDoc(doc(db, 'accounts', editAcc.id), data); showToast('Account updated ✓'); }
       else         { await addDoc(collection(db, 'accounts'), data);          showToast('Account added ✓'); }
       setShowForm(false);
@@ -1071,11 +1147,34 @@ function Accounts({ user, accounts, transactions, showToast }) {
     catch { showToast('Delete failed', 'error'); }
   };
 
-  const withStats = accounts.map(a => ({
-    ...a,
-    totalSpent: transactions.filter(t => t.accountId === a.id && t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0),
-    txnCount:   transactions.filter(t => t.accountId === a.id).length,
-  }));
+  const friendMap = Object.fromEntries(friends.map(f => [f.id, f]));
+
+  const withStats = accounts.map(a => {
+    const accTxns    = transactions.filter(t => t.accountId === a.id);
+    const totalSpent = accTxns.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0);
+    const totalBack  = accTxns.filter(t => t.type === 'payment').reduce((s, t) => s + Number(t.amount), 0);
+
+    // Per-friend breakdown for this account
+    const friendBreakdown = friends.map(f => {
+      const spent    = accTxns.filter(t => t.friendId === f.id && t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0);
+      const received = accTxns.filter(t => t.friendId === f.id && t.type === 'payment').reduce((s, t) => s + Number(t.amount), 0);
+      return { ...f, spent, received, balance: spent - received };
+    }).filter(f => f.spent > 0 || f.received > 0);
+
+    // Credit card: available = limit - netSpent (spent - received back)
+    const netSpent = totalSpent - totalBack;
+    const available = a.type === 'credit_card' && a.limit ? a.limit - netSpent : null;
+    const usedPct   = a.type === 'credit_card' && a.limit ? Math.min(100, (netSpent / a.limit) * 100) : 0;
+
+    // Bank account: remaining = balance - net spent
+    const remaining = a.type === 'bank_account' && a.balance != null ? a.balance - netSpent : null;
+    const balPct    = a.type === 'bank_account' && a.balance ? Math.min(100, (netSpent / a.balance) * 100) : 0;
+
+    return { ...a, totalSpent, totalBack, netSpent, available, usedPct, remaining, balPct, friendBreakdown, txnCount: accTxns.length };
+  });
+
+  // Bar color based on usage
+  const barColor = (pct) => pct >= 90 ? 'var(--red)' : pct >= 70 ? 'var(--amber)' : 'var(--indigo)';
 
   return (
     <div>
@@ -1096,12 +1195,36 @@ function Accounts({ user, accounts, transactions, showToast }) {
               </div>
               <div className="field">
                 <label className="field-label">Account Type *</label>
-                <select className="field-input" value={form.type} onChange={set('type')}>
+                <select className="field-input" value={form.type} onChange={e => { set('type')(e); setForm(f => ({ ...f, type: e.target.value, limit: '', balance: '' })); }}>
                   <option value="credit_card">💳 Credit Card</option>
                   <option value="bank_account">🏦 Bank Account</option>
                 </select>
               </div>
             </div>
+            {form.type === 'credit_card' && (
+              <div className="form-row" style={{ marginBottom: 14 }}>
+                <div className="field">
+                  <label className="field-label">Credit Limit (₹)</label>
+                  <input className="field-input" type="number" placeholder="e.g. 100000" min="0"
+                    value={form.limit} onChange={set('limit')} />
+                  <span style={{ fontSize: 11, color: 'var(--ink4)', marginTop: 3 }}>
+                    Available credit auto-updates when you add expenses
+                  </span>
+                </div>
+              </div>
+            )}
+            {form.type === 'bank_account' && (
+              <div className="form-row" style={{ marginBottom: 14 }}>
+                <div className="field">
+                  <label className="field-label">Current Balance (₹)</label>
+                  <input className="field-input" type="number" placeholder="e.g. 50000" min="0"
+                    value={form.balance} onChange={set('balance')} />
+                  <span style={{ fontSize: 11, color: 'var(--ink4)', marginTop: 3 }}>
+                    Remaining balance auto-reduces when you add expenses
+                  </span>
+                </div>
+              </div>
+            )}
             <div style={{ display: 'flex', gap: 10 }}>
               <button className="btn btn-primary" type="submit" disabled={saving}>{saving ? 'Saving…' : editAcc ? 'Update' : 'Add Account'}</button>
               <button className="btn btn-ghost" type="button" onClick={() => setShowForm(false)}>Cancel</button>
@@ -1115,20 +1238,123 @@ function Accounts({ user, accounts, transactions, showToast }) {
       ) : (
         <div className="account-grid">
           {withStats.map(a => (
-            <div key={a.id} className="account-card">
-              <div className="account-icon" style={{ background: a.type === 'credit_card' ? 'var(--indigobg)' : 'var(--greenbg)' }}>
-                {a.type === 'credit_card' ? '💳' : '🏦'}
+            <div key={a.id}>
+              <div className="account-card">
+                {/* Header */}
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
+                  <div className="account-icon" style={{ background: a.type === 'credit_card' ? 'var(--indigobg)' : 'var(--greenbg)', marginBottom: 0 }}>
+                    {a.type === 'credit_card' ? '💳' : '🏦'}
+                  </div>
+                  <span className="badge" style={{ background: a.type === 'credit_card' ? 'var(--indigobg)' : 'var(--greenbg)', color: a.type === 'credit_card' ? 'var(--indigo)' : 'var(--green)', border: `1px solid ${a.type === 'credit_card' ? 'var(--indigobrd)' : 'var(--greenbrd)'}` }}>
+                    {a.type === 'credit_card' ? 'Credit' : 'Savings'}
+                  </span>
+                </div>
+
+                <div className="account-name">{a.name}</div>
+                <div style={{ fontSize: 12, color: 'var(--ink3)', marginBottom: 12 }}>{a.txnCount} transaction{a.txnCount !== 1 ? 's' : ''}</div>
+
+                {/* Credit Card Limit Bar */}
+                {a.type === 'credit_card' && a.limit && (
+                  <div style={{ marginBottom: 12, background: 'var(--bg)', borderRadius: 10, padding: '12px 14px' }}>
+                    <div className="limit-row">
+                      <span>Used</span>
+                      <span style={{ fontWeight: 700, color: barColor(a.usedPct) }}>{fmt(a.netSpent)}</span>
+                    </div>
+                    <div className="limit-bar-track">
+                      <div className="limit-bar-fill" style={{ width: `${a.usedPct}%`, background: barColor(a.usedPct) }} />
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11 }}>
+                      <span style={{ color: 'var(--ink3)' }}>Limit: {fmt(a.limit)}</span>
+                      <span className="limit-available" style={{ color: a.available < 0 ? 'var(--red)' : 'var(--green)' }}>
+                        Available: {fmt(Math.max(0, a.available))}
+                      </span>
+                    </div>
+                    {a.available < 0 && <div style={{ fontSize: 11, color: 'var(--red)', marginTop: 4, fontWeight: 600 }}>⚠️ Limit exceeded by {fmt(Math.abs(a.available))}</div>}
+                  </div>
+                )}
+
+                {/* Bank Account Balance Bar */}
+                {a.type === 'bank_account' && a.balance != null && (
+                  <div style={{ marginBottom: 12, background: 'var(--bg)', borderRadius: 10, padding: '12px 14px' }}>
+                    <div className="limit-row">
+                      <span>Spent on friends</span>
+                      <span style={{ fontWeight: 700, color: 'var(--red)' }}>{fmt(a.netSpent)}</span>
+                    </div>
+                    <div className="limit-bar-track">
+                      <div className="limit-bar-fill" style={{ width: `${a.balPct}%`, background: 'var(--green)' }} />
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11 }}>
+                      <span style={{ color: 'var(--ink3)' }}>Total: {fmt(a.balance)}</span>
+                      <span className="limit-available" style={{ color: a.remaining < 0 ? 'var(--red)' : 'var(--green)' }}>
+                        Remaining: {fmt(Math.max(0, a.remaining))}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Simple spent if no limit/balance set */}
+                {((a.type === 'credit_card' && !a.limit) || (a.type === 'bank_account' && a.balance == null)) && (
+                  <div style={{ marginBottom: 12 }}>
+                    <div className="account-spent">{fmt(a.totalSpent)}</div>
+                    <div className="account-spent-label">Total spent via this account</div>
+                  </div>
+                )}
+
+                {/* Actions */}
+                <div className="account-actions">
+                  <button className="btn btn-ghost btn-sm" style={{ flex: 1 }}
+                    onClick={() => setExpandAcc(expandAcc === a.id ? null : a.id)}>
+                    👥 {expandAcc === a.id ? 'Hide' : 'Friends'}
+                  </button>
+                  <button className="btn btn-ghost btn-sm btn-icon" onClick={() => openEdit(a)}><IcoEdit /></button>
+                  <button className="btn btn-danger btn-sm btn-icon" onClick={() => deleteAcc(a)}><IcoTrash /></button>
+                </div>
               </div>
-              <div className="account-name">{a.name}</div>
-              <div className="account-type" style={{ color: a.type === 'credit_card' ? 'var(--indigo)' : 'var(--green)' }}>
-                {a.type === 'credit_card' ? 'Credit Card' : 'Bank Account'}
-              </div>
-              <div className="account-spent">{fmt(a.totalSpent)}</div>
-              <div className="account-spent-label">Total spent · {a.txnCount} transaction{a.txnCount !== 1 ? 's' : ''}</div>
-              <div className="account-actions">
-                <button className="btn btn-ghost btn-sm" style={{ flex: 1 }} onClick={() => openEdit(a)}><IcoEdit /> Edit</button>
-                <button className="btn btn-danger btn-sm" style={{ flex: 1 }} onClick={() => deleteAcc(a)}><IcoTrash /> Remove</button>
-              </div>
+
+              {/* Friend × Account Breakdown Panel */}
+              {expandAcc === a.id && (
+                <div className="table-card" style={{ marginTop: 8, borderRadius: 12 }}>
+                  <div style={{ padding: '14px 16px 8px', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: 14, color: 'var(--ink)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    👥 Who Used This Account
+                    <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--ink3)', fontFamily: 'var(--fb)' }}>— {a.name}</span>
+                  </div>
+                  {a.friendBreakdown.length === 0 ? (
+                    <div style={{ padding: '14px 16px 16px', fontSize: 13, color: 'var(--ink3)' }}>No transactions from this account yet.</div>
+                  ) : (
+                    <div style={{ overflowX: 'auto' }}>
+                      <table className="breakdown-table">
+                        <thead>
+                          <tr>
+                            <th>Friend</th>
+                            <th>Borrowed</th>
+                            <th>Paid Back</th>
+                            <th>Balance</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {a.friendBreakdown.map(f => (
+                            <tr key={f.id}>
+                              <td>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                  <div className="friend-avatar" style={{ width: 28, height: 28, fontSize: 11, background: f.color || colorFor(f.name) }}>{initials(f.name)}</div>
+                                  <span style={{ fontWeight: 600 }}>{f.name}</span>
+                                </div>
+                              </td>
+                              <td style={{ color: 'var(--red)', fontWeight: 600 }}>{fmt(f.spent)}</td>
+                              <td style={{ color: 'var(--green)', fontWeight: 600 }}>{fmt(f.received)}</td>
+                              <td>
+                                <span className={`badge ${f.balance > 0 ? 'badge-red' : f.balance < 0 ? 'badge-green' : 'badge-gray'}`}>
+                                  {f.balance > 0 ? `Owes ${fmt(f.balance)}` : f.balance < 0 ? `You owe ${fmt(Math.abs(f.balance))}` : '✓ Settled'}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           ))}
         </div>
