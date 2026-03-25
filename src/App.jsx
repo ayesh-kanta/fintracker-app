@@ -278,79 +278,102 @@ body { background: var(--bg); font-family: var(--fb); color: var(--ink); }
 .act-dot   { width: 3px; height: 3px; border-radius: 50%; background: var(--border2); }
 .act-amt   { font-family: var(--fh); font-size: 15px; font-weight: 900; flex-shrink: 0; }
 
-/* ─── FRIEND CARD (desktop grid) ─── */
-.friends-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 18px; }
-.friend-card {
+/* ─── FRIENDS LIST (row-based) ─── */
+.friends-list {
   background: var(--card); border: 1px solid var(--border);
   border-radius: var(--r); box-shadow: var(--s1); overflow: hidden;
-  transition: box-shadow 0.18s;
 }
-.friend-card:hover { box-shadow: var(--s2); }
-.fc-top { padding: 20px 20px 0; }
-.fc-head { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 18px; }
-.fc-av {
-  width: 52px; height: 52px; border-radius: 50%; flex-shrink: 0;
+.fl-header {
+  display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 120px;
+  padding: 10px 20px; background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+.fl-header-cell {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--ink3);
+}
+
+/* ── single friend row ── */
+.fl-row-wrap { border-bottom: 1px solid var(--border); }
+.fl-row-wrap:last-child { border-bottom: none; }
+
+.fl-row {
+  display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 120px;
+  align-items: center; padding: 14px 20px;
+  cursor: pointer; transition: background 0.14s; user-select: none;
+}
+.fl-row:hover { background: var(--bg); }
+.fl-row.open  { background: var(--tbg); }
+
+.fl-identity { display: flex; align-items: center; gap: 13px; }
+.fl-av {
+  width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
-  font-family: var(--fh); font-size: 16px; font-weight: 900; color: white;
+  font-family: var(--fh); font-size: 14px; font-weight: 900; color: white;
 }
-.fc-name  { font-family: var(--fh); font-size: 16px; font-weight: 900; color: var(--ink); }
-.fc-phone { font-size: 12px; color: var(--ink3); margin-top: 3px; font-weight: 500; }
-.fc-badge-wrap { margin-left: auto; margin-top: 2px; flex-shrink: 0; }
+.fl-name  { font-family: var(--fh); font-size: 14px; font-weight: 800; color: var(--ink); }
+.fl-phone { font-size: 11px; color: var(--ink3); margin-top: 2px; font-weight: 500; }
 
-.fc-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 16px; }
-.fcs { background: var(--bg); border-radius: 10px; padding: 11px 12px; border: 1px solid var(--border); }
-.fcs-lbl { font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink4); margin-bottom: 4px; }
-.fcs-val { font-family: var(--fh); font-size: 15px; font-weight: 900; color: var(--ink); }
-.fcs-val.red   { color: var(--red); }
-.fcs-val.green { color: var(--green); }
-.fcs-val.teal  { color: var(--t); }
+.fl-cell        { font-family: var(--fh); font-size: 14px; font-weight: 800; }
+.fl-cell.given  { color: var(--red); }
+.fl-cell.recvd  { color: var(--green); }
+.fl-cell.bal-pos{ color: var(--red); }
+.fl-cell.bal-neg{ color: var(--green); }
+.fl-cell.bal-zero{ color: var(--ink3); font-size: 13px; font-weight: 700; }
 
-.fc-actions { display: flex; border-top: 1px solid var(--border); }
-.fc-btn {
-  flex: 1; padding: 11px 10px; background: none; border: none;
-  color: var(--ink3); cursor: pointer; font-family: var(--fb); font-size: 12px; font-weight: 700;
-  display: flex; align-items: center; justify-content: center; gap: 5px;
-  border-right: 1px solid var(--border); transition: all 0.13s;
+.fl-actions { display: flex; align-items: center; gap: 6px; justify-content: flex-end; }
+.fl-expand-btn {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 12px; font-weight: 700; color: var(--t);
+  background: var(--tbg); border: 1px solid var(--tbrd);
+  border-radius: 8px; padding: 5px 10px; cursor: pointer;
+  transition: all 0.13s; white-space: nowrap;
 }
-.fc-btn:last-child { border-right: none; }
-.fc-btn:hover { background: var(--bg); color: var(--ink); }
-.fc-btn.hist { color: var(--t); }
-.fc-btn.hist:hover { background: var(--tbg); }
-.fc-btn.del:hover  { background: var(--redbg); color: var(--red); }
+.fl-expand-btn:hover { background: var(--t); color: white; border-color: var(--t); }
 
-/* ─── FRIEND HISTORY TIMELINE ─── */
-.fc-history { border-top: 1px solid var(--border); background: #f8fcfb; }
-.fch-header { padding: 14px 20px 10px; display: flex; align-items: center; justify-content: space-between; }
-.fch-title { font-family: var(--fh); font-size: 13px; font-weight: 800; color: var(--ink); display: flex; align-items: center; gap: 7px; }
-.fch-badge { background: var(--tbg); color: var(--t); border: 1px solid var(--tbrd); border-radius: 20px; font-size: 10px; font-weight: 700; padding: 2px 8px; }
-.timeline { padding: 0 20px 14px; }
-.tl-item { display: flex; gap: 13px; position: relative; }
-.tl-item:not(:last-child)::before {
-  content: ''; position: absolute;
-  left: 14px; top: 30px; bottom: -4px; width: 2px;
-  background: var(--border); z-index: 0;
+/* ── detail panel ── */
+.fl-detail {
+  background: #f5faf9; border-top: 1px solid var(--border);
+  animation: slideDown 0.2s cubic-bezier(0.22,1,0.36,1);
 }
-.tl-dot {
-  width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center; font-size: 12px;
-  z-index: 1; margin-top: 3px; border: 2px solid var(--card);
+@keyframes slideDown { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
+
+.fl-detail-inner { padding: 20px 24px 24px; }
+
+/* summary strip */
+.fl-summary {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px;
 }
-.tl-dot.expense { background: var(--redbg); border-color: var(--redbrd); }
-.tl-dot.payment { background: var(--greenbg); border-color: var(--greenbrd); }
-.tl-body {
-  flex: 1; background: var(--card); border: 1px solid var(--border);
-  border-radius: 11px; padding: 10px 14px; margin-bottom: 10px; box-shadow: var(--s1);
+.fl-sum-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 14px 16px;
+  box-shadow: var(--s1);
 }
-.tl-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
-.tl-note { font-size: 13px; font-weight: 700; color: var(--ink); }
-.tl-amt  { font-family: var(--fh); font-size: 14px; font-weight: 900; }
-.tl-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.tl-tag  { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; color: var(--ink3); background: var(--bg); border: 1px solid var(--border); border-radius: 6px; padding: 2px 7px; }
-.fch-footer { display: flex; border-top: 1px solid var(--border); }
-.fchf-cell { flex: 1; padding: 12px 16px; text-align: center; border-right: 1px solid var(--border); }
-.fchf-cell:last-child { border-right: none; }
-.fchf-lbl { font-size: 9px; font-weight: 700; color: var(--ink3); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 3px; }
-.fchf-val { font-family: var(--fh); font-size: 15px; font-weight: 900; }
+.fl-sum-lbl { font-size: 10px; font-weight: 700; color: var(--ink3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+.fl-sum-val { font-family: var(--fh); font-size: 20px; font-weight: 900; color: var(--ink); }
+.fl-sum-val.red   { color: var(--red); }
+.fl-sum-val.green { color: var(--green); }
+
+/* account breakdown */
+.fl-acc-strip { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+.fl-acc-pill {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 10px; padding: 8px 14px; font-size: 13px; font-weight: 600;
+  box-shadow: var(--s1);
+}
+.fl-acc-pill-name { color: var(--ink2); }
+.fl-acc-pill-amt  { font-family: var(--fh); font-weight: 800; color: var(--red); }
+.fl-acc-pill-recv { color: var(--green); font-weight: 700; }
+
+/* transaction table inside detail */
+.fl-txn-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.fl-txn-table thead tr { background: var(--bg2); }
+.fl-txn-table th { padding: 9px 14px; text-align: left; font-size: 10px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: var(--ink3); border-bottom: 1px solid var(--border); white-space: nowrap; }
+.fl-txn-table td { padding: 12px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.fl-txn-table tr:last-child td { border-bottom: none; }
+.fl-txn-table tr:hover td { background: rgba(10,114,104,0.03); }
+.fl-txn-wrap { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: var(--s1); }
 
 /* ─── ACCOUNT CARD ─── */
 .accounts-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 18px; }
@@ -1351,159 +1374,285 @@ function TxnModal({ userId, friends, accounts, existing, onClose, onSaved }) {
 // ─── FRIENDS ─────────────────────────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════════════════
 function Friends({ user, friends, accounts, transactions, showToast }) {
-  const [showForm,setShowForm]   = useState(false);
-  const [editF,setEditF]         = useState(null);
-  const [form,setForm]           = useState({name:'',phone:''});
-  const [saving,setSaving]       = useState(false);
-  const [expanded,setExpanded]   = useState(null);
-  const set=k=>e=>setForm(f=>({...f,[k]:e.target.value}));
-  const aMap=Object.fromEntries(accounts.map(a=>[a.id,a]));
+  const [showForm, setShowForm] = useState(false);
+  const [editF, setEditF]       = useState(null);
+  const [form, setForm]         = useState({ name: '', phone: '' });
+  const [saving, setSaving]     = useState(false);
+  const [expanded, setExpanded] = useState(null); // friend id
+  const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
+  const aMap = Object.fromEntries(accounts.map(a => [a.id, a]));
 
-  const submit=async(e)=>{
+  const submit = async (e) => {
     e.preventDefault();
-    if(!form.name){alert('Enter a name');return;}
+    if (!form.name) { alert('Enter a name'); return; }
     setSaving(true);
-    try{
-      const data={userId:user.id,name:form.name,phone:form.phone,color:colorFor(form.name)};
-      if(editF){await updateDoc(doc(db,'friends',editF.id),data);showToast('Friend updated ✓');}
-      else{await addDoc(collection(db,'friends'),data);showToast('Friend added ✓');}
-      setShowForm(false);
-    }catch{showToast('Save failed','error');}
-    finally{setSaving(false);}
+    try {
+      const data = { userId: user.id, name: form.name, phone: form.phone, color: colorFor(form.name) };
+      if (editF) { await updateDoc(doc(db, 'friends', editF.id), data); showToast('Friend updated ✓'); }
+      else       { await addDoc(collection(db, 'friends'), data);        showToast('Friend added ✓'); }
+      setShowForm(false); setEditF(null);
+    } catch { showToast('Save failed', 'error'); }
+    finally { setSaving(false); }
   };
 
-  const del=async(f)=>{
-    if(!window.confirm(`Delete ${f.name}?`))return;
-    try{await deleteDoc(doc(db,'friends',f.id));showToast(`${f.name} removed`);}
-    catch{showToast('Delete failed','error');}
+  const del = async (e, f) => {
+    e.stopPropagation();
+    if (!window.confirm(`Delete ${f.name}?`)) return;
+    try { await deleteDoc(doc(db, 'friends', f.id)); showToast(`${f.name} removed`); }
+    catch { showToast('Delete failed', 'error'); }
   };
 
-  const withStats=friends.map(f=>{
-    const given=transactions.filter(t=>t.friendId===f.id&&t.type==='expense').reduce((s,t)=>s+Number(t.amount),0);
-    const recv=transactions.filter(t=>t.friendId===f.id&&t.type==='payment').reduce((s,t)=>s+Number(t.amount),0);
-    const history=transactions.filter(t=>t.friendId===f.id).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
-    return{...f,given,received:recv,balance:given-recv,history};
+  const openEdit = (e, f) => {
+    e.stopPropagation();
+    setForm({ name: f.name, phone: f.phone || '' });
+    setEditF(f); setShowForm(true);
+  };
+
+  const withStats = friends.map(f => {
+    const given    = transactions.filter(t => t.friendId === f.id && t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0);
+    const received = transactions.filter(t => t.friendId === f.id && t.type === 'payment').reduce((s, t) => s + Number(t.amount), 0);
+    const history  = transactions.filter(t => t.friendId === f.id).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    // per-account breakdown
+    const byAccount = accounts.map(a => {
+      const aGiven = history.filter(t => t.accountId === a.id && t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0);
+      const aRecvd = history.filter(t => t.accountId === a.id && t.type === 'payment').reduce((s, t) => s + Number(t.amount), 0);
+      return { ...a, given: aGiven, received: aRecvd, net: aGiven - aRecvd };
+    }).filter(a => a.given > 0 || a.received > 0);
+    return { ...f, given, received, balance: given - received, history, byAccount };
   });
 
-  return(
+  const totalPending = withStats.reduce((s, f) => s + Math.max(0, f.balance), 0);
+
+  return (
     <div>
       <div className="page-head">
         <div>
           <div className="page-title">Friends</div>
-          <div className="page-sub">{friends.length} friend{friends.length!==1?'s':''} tracked</div>
+          <div className="page-sub">
+            {friends.length} friend{friends.length !== 1 ? 's' : ''} &nbsp;·&nbsp;
+            <span style={{ color: 'var(--red)', fontWeight: 700 }}>{fmt(totalPending)} outstanding</span>
+          </div>
         </div>
-        <button className="btn btn-primary" onClick={()=>{setForm({name:'',phone:''});setEditF(null);setShowForm(true);}}>
-          <IcoPlus/> Add Friend
+        <button className="btn btn-primary" onClick={() => { setForm({ name: '', phone: '' }); setEditF(null); setShowForm(true); }}>
+          <IcoPlus /> Add Friend
         </button>
       </div>
 
-      {showForm&&(
+      {/* Add / Edit form */}
+      {showForm && (
         <div className="form-section">
-          <div className="form-title">{editF?'Edit Friend':'Add Friend'}</div>
+          <div className="form-title">{editF ? 'Edit Friend' : 'Add Friend'}</div>
           <div className="form-sub">Track money you spend on behalf of this person</div>
           <form onSubmit={submit}>
             <div className="form-row g2">
               <div className="field">
                 <label className="field-label">Full Name *</label>
-                <input className="field-input" placeholder="e.g. Amit Sharma" value={form.name} onChange={set('name')} autoFocus/>
+                <input className="field-input" placeholder="e.g. Amit Sharma" value={form.name} onChange={set('name')} autoFocus />
               </div>
               <div className="field">
                 <label className="field-label">Phone (optional)</label>
                 <input className="field-input" type="tel" placeholder="10-digit number"
-                  value={form.phone} onChange={e=>setForm(f=>({...f,phone:e.target.value.replace(/\D/g,'').slice(0,10)}))}/>
+                  value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value.replace(/\D/g, '').slice(0, 10) }))} />
               </div>
             </div>
-            <div style={{display:'flex',gap:10}}>
-              <button className="btn btn-primary" type="submit" disabled={saving}>{saving?'Saving…':editF?'Update Friend':'Add Friend'}</button>
-              <button className="btn btn-ghost" type="button" onClick={()=>setShowForm(false)}>Cancel</button>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button className="btn btn-primary" type="submit" disabled={saving}>{saving ? 'Saving…' : editF ? 'Update Friend' : 'Add Friend'}</button>
+              <button className="btn btn-ghost" type="button" onClick={() => { setShowForm(false); setEditF(null); }}>Cancel</button>
             </div>
           </form>
         </div>
       )}
 
-      {withStats.length===0?(
-        <div className="tbl-card"><div className="empty"><div className="empty-icon">👥</div><div className="empty-title">No friends yet</div><div className="empty-sub">Add your first friend to start tracking</div></div></div>
-      ):(
-        <div className="friends-grid">
-          {withStats.map(f=>{
-            const isOpen=expanded===f.id;
-            return(
-              <div key={f.id} className="friend-card">
-                <div className="fc-top">
-                  <div className="fc-head">
-                    <div className="fc-av" style={{background:f.color||colorFor(f.name)}}>{initials(f.name)}</div>
-                    <div style={{flex:1}}>
-                      <div className="fc-name">{f.name}</div>
-                      {f.phone&&<div className="fc-phone">📞 {f.phone}</div>}
+      {withStats.length === 0 ? (
+        <div className="tbl-card">
+          <div className="empty">
+            <div className="empty-icon">👥</div>
+            <div className="empty-title">No friends yet</div>
+            <div className="empty-sub">Add your first friend to start tracking expenses</div>
+          </div>
+        </div>
+      ) : (
+        <div className="friends-list">
+
+          {/* Column headers */}
+          <div className="fl-header">
+            <div className="fl-header-cell">Friend</div>
+            <div className="fl-header-cell">Total Given</div>
+            <div className="fl-header-cell">Received Back</div>
+            <div className="fl-header-cell">Outstanding</div>
+            <div className="fl-header-cell" style={{ textAlign: 'right' }}>Actions</div>
+          </div>
+
+          {/* One row per friend */}
+          {withStats.map(f => {
+            const isOpen = expanded === f.id;
+            const balClass = f.balance > 0 ? 'bal-pos' : f.balance < 0 ? 'bal-neg' : 'bal-zero';
+
+            return (
+              <div key={f.id} className="fl-row-wrap">
+
+                {/* ── Clickable summary row ── */}
+                <div
+                  className={`fl-row ${isOpen ? 'open' : ''}`}
+                  onClick={() => setExpanded(isOpen ? null : f.id)}
+                  title="Click to view full breakdown"
+                >
+                  {/* Identity */}
+                  <div className="fl-identity">
+                    <div className="fl-av" style={{ background: f.color || colorFor(f.name) }}>
+                      {initials(f.name)}
                     </div>
-                    <div className="fc-badge-wrap">
-                      <span className={`badge ${f.balance>0?'badge-red':f.balance<0?'badge-green':'badge-gray'}`}>
-                        {f.balance>0?`Owes ${fmt(f.balance)}`:f.balance<0?`You owe ${fmt(Math.abs(f.balance))}`:'✓ Settled'}
-                      </span>
+                    <div>
+                      <div className="fl-name">{f.name}</div>
+                      {f.phone && <div className="fl-phone">📞 {f.phone}</div>}
                     </div>
                   </div>
-                  <div className="fc-stats">
-                    <div className="fcs"><div className="fcs-lbl">💸 Given</div><div className="fcs-val red">{fmt(f.given)}</div></div>
-                    <div className="fcs"><div className="fcs-lbl">💰 Received</div><div className="fcs-val green">{fmt(f.received)}</div></div>
-                    <div className="fcs"><div className="fcs-lbl">📊 Transactions</div><div className="fcs-val teal">{f.history.length}</div></div>
-                  </div>
-                </div>
 
-                <div className="fc-actions">
-                  <button className="fc-btn hist" onClick={()=>setExpanded(isOpen?null:f.id)}>
-                    <IcoHistory/> {isOpen?'Hide History':`View History (${f.history.length})`}
-                    <IcoCaret up={isOpen}/>
-                  </button>
-                  <button className="fc-btn" onClick={()=>{setForm({name:f.name,phone:f.phone||''});setEditF(f);setShowForm(true);}}>
-                    <IcoEdit/> Edit
-                  </button>
-                  <button className="fc-btn del" onClick={()=>del(f)}><IcoTrash/></button>
-                </div>
+                  {/* Given */}
+                  <div className="fl-cell given">{fmt(f.given)}</div>
 
-                {/* ── History Panel ── */}
-                {isOpen&&(
-                  <div className="fc-history">
-                    <div className="fch-header">
-                      <div className="fch-title">
-                        📅 Transaction History
-                        <span className="fch-badge">{f.history.length} records</span>
+                  {/* Received */}
+                  <div className="fl-cell recvd">{fmt(f.received)}</div>
+
+                  {/* Outstanding balance */}
+                  <div>
+                    <div className={`fl-cell ${balClass}`}>
+                      {f.balance > 0 ? fmt(f.balance) : f.balance < 0 ? `You owe ${fmt(Math.abs(f.balance))}` : '✓ Settled'}
+                    </div>
+                    {f.balance > 0 && (
+                      <div style={{ fontSize: 11, color: 'var(--ink3)', marginTop: 2, fontWeight: 500 }}>
+                        {f.history.length} transaction{f.history.length !== 1 ? 's' : ''}
                       </div>
-                    </div>
-                    {f.history.length===0?(
-                      <div style={{padding:'20px 20px',fontSize:13,color:'var(--ink3)',textAlign:'center'}}>No transactions with {f.name} yet.</div>
-                    ):(
-                      <div className="timeline">
-                        {f.history.map(t=>{
-                          const acc=aMap[t.accountId];
-                          const isPay=t.type==='payment';
-                          return(
-                            <div key={t.id} className="tl-item">
-                              <div className={`tl-dot ${t.type}`}>{isPay?'💰':'💸'}</div>
-                              <div className="tl-body">
-                                <div className="tl-top">
-                                  <div className="tl-note">{t.note||(isPay?'Payment received':'Expense paid')}</div>
-                                  <div className="tl-amt" style={{color:isPay?'var(--green)':'var(--red)'}}>{isPay?'+':'-'}{fmt(t.amount)}</div>
-                                </div>
-                                <div className="tl-meta">
-                                  <span className="tl-tag">📅 {fmtDate(t.date)}</span>
-                                  {acc&&<span className="tl-tag">{acc.type==='credit_card'?'💳':'🏦'} {acc.name}</span>}
-                                  <span className="tl-tag" style={{color:isPay?'var(--green)':'var(--red)',borderColor:isPay?'var(--greenbrd)':'var(--redbrd)',background:isPay?'var(--greenbg)':'var(--redbg)'}}>
-                                    {isPay?'✓ Paid Back':'↑ You Paid'}
-                                  </span>
-                                </div>
+                    )}
+                  </div>
+
+                  {/* Actions */}
+                  <div className="fl-actions" onClick={e => e.stopPropagation()}>
+                    <button className="fl-expand-btn" onClick={() => setExpanded(isOpen ? null : f.id)}>
+                      {isOpen ? '▲ Close' : '▼ Details'}
+                    </button>
+                    <button className="btn btn-ghost btn-sm btn-icon" onClick={e => openEdit(e, f)} title="Edit"><IcoEdit /></button>
+                    <button className="btn btn-danger btn-sm btn-icon" onClick={e => del(e, f)} title="Delete"><IcoTrash /></button>
+                  </div>
+                </div>
+
+                {/* ── Expandable detail panel ── */}
+                {isOpen && (
+                  <div className="fl-detail">
+                    <div className="fl-detail-inner">
+
+                      {/* 4-stat summary strip */}
+                      <div className="fl-summary">
+                        <div className="fl-sum-card">
+                          <div className="fl-sum-lbl">💸 Total Given</div>
+                          <div className="fl-sum-val red">{fmt(f.given)}</div>
+                        </div>
+                        <div className="fl-sum-card">
+                          <div className="fl-sum-lbl">💰 Received Back</div>
+                          <div className="fl-sum-val green">{fmt(f.received)}</div>
+                        </div>
+                        <div className="fl-sum-card" style={{ background: f.balance > 0 ? 'var(--redbg)' : f.balance < 0 ? 'var(--greenbg)' : 'var(--card)', borderColor: f.balance > 0 ? 'var(--redbrd)' : f.balance < 0 ? 'var(--greenbrd)' : 'var(--border)' }}>
+                          <div className="fl-sum-lbl">⚖️ Net Balance</div>
+                          <div className="fl-sum-val" style={{ color: f.balance > 0 ? 'var(--red)' : f.balance < 0 ? 'var(--green)' : 'var(--ink3)' }}>
+                            {f.balance === 0 ? '✓ Settled' : fmt(Math.abs(f.balance))}
+                          </div>
+                        </div>
+                        <div className="fl-sum-card">
+                          <div className="fl-sum-lbl">📊 Transactions</div>
+                          <div className="fl-sum-val" style={{ color: 'var(--t)' }}>{f.history.length}</div>
+                        </div>
+                      </div>
+
+                      {/* Per-account pills */}
+                      {f.byAccount.length > 0 && (
+                        <div style={{ marginBottom: 18 }}>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink3)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 10 }}>Breakdown by Account</div>
+                          <div className="fl-acc-strip">
+                            {f.byAccount.map(a => (
+                              <div key={a.id} className="fl-acc-pill">
+                                <span style={{ fontSize: 16 }}>{a.type === 'credit_card' ? '💳' : '🏦'}</span>
+                                <span className="fl-acc-pill-name">{a.name}</span>
+                                <span style={{ color: 'var(--border2)' }}>·</span>
+                                <span className="fl-acc-pill-amt">-{fmt(a.given)}</span>
+                                {a.received > 0 && <><span style={{ color: 'var(--border2)' }}>·</span><span className="fl-acc-pill-recv">+{fmt(a.received)}</span></>}
+                                <span style={{ background: a.net > 0 ? 'var(--redbg)' : 'var(--greenbg)', color: a.net > 0 ? 'var(--red)' : 'var(--green)', border: `1px solid ${a.net > 0 ? 'var(--redbrd)' : 'var(--greenbrd)'}`, borderRadius: 6, padding: '1px 8px', fontSize: 11, fontWeight: 800, fontFamily: 'var(--fh)' }}>
+                                  {a.net > 0 ? `owes ${fmt(a.net)}` : a.net < 0 ? `settled +${fmt(Math.abs(a.net))}` : '✓'}
+                                </span>
                               </div>
-                            </div>
-                          );
-                        })}
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Full transaction table */}
+                      <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink3)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 10 }}>
+                        All Transactions with {f.name}
                       </div>
-                    )}
-                    {f.history.length>0&&(
-                      <div className="fch-footer">
-                        <div className="fchf-cell"><div className="fchf-lbl">Total Given</div><div className="fchf-val" style={{color:'var(--red)'}}>{fmt(f.given)}</div></div>
-                        <div className="fchf-cell"><div className="fchf-lbl">Received Back</div><div className="fchf-val" style={{color:'var(--green)'}}>{fmt(f.received)}</div></div>
-                        <div className="fchf-cell"><div className="fchf-lbl">Net Balance</div><div className="fchf-val" style={{color:f.balance>0?'var(--red)':f.balance<0?'var(--green)':'var(--ink3)'}}>{f.balance===0?'✓ Settled':fmt(Math.abs(f.balance))}</div></div>
-                      </div>
-                    )}
+                      {f.history.length === 0 ? (
+                        <div style={{ padding: '20px', textAlign: 'center', fontSize: 13, color: 'var(--ink3)' }}>No transactions yet.</div>
+                      ) : (
+                        <div className="fl-txn-wrap">
+                          <table className="fl-txn-table">
+                            <thead>
+                              <tr>
+                                <th>Date</th>
+                                <th>Type</th>
+                                <th>Account Used</th>
+                                <th>Amount</th>
+                                <th>Note / Description</th>
+                                <th>Running Balance</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {(() => {
+                                let running = 0;
+                                // process oldest→newest for running balance, then reverse for display
+                                const chronological = [...f.history].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+                                const rows = chronological.map(t => {
+                                  const acc = aMap[t.accountId];
+                                  const isPay = t.type === 'payment';
+                                  running += isPay ? -Number(t.amount) : Number(t.amount);
+                                  return { t, acc, isPay, snapshot: running };
+                                });
+                                // display newest first
+                                return rows.reverse().map(({ t, acc, isPay, snapshot }) => (
+                                  <tr key={t.id}>
+                                    <td style={{ color: 'var(--ink3)', fontSize: 12, fontWeight: 500, whiteSpace: 'nowrap' }}>{fmtDate(t.date)}</td>
+                                    <td>
+                                      {isPay
+                                        ? <span className="txn-payment">Payment In</span>
+                                        : <span className="txn-expense">Expense</span>}
+                                    </td>
+                                    <td>
+                                      {acc ? (
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                                          <span style={{ fontSize: 15 }}>{acc.type === 'credit_card' ? '💳' : '🏦'}</span>
+                                          <span style={{ fontWeight: 600, color: 'var(--ink2)', fontSize: 13 }}>{acc.name}</span>
+                                        </div>
+                                      ) : <span style={{ color: 'var(--ink4)' }}>—</span>}
+                                    </td>
+                                    <td style={{ fontFamily: 'var(--fh)', fontWeight: 800, fontSize: 14, color: isPay ? 'var(--green)' : 'var(--red)' }}>
+                                      {isPay ? '+' : '-'}{fmt(t.amount)}
+                                    </td>
+                                    <td style={{ color: 'var(--ink2)', maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                      {t.note || <span style={{ color: 'var(--ink4)' }}>—</span>}
+                                    </td>
+                                    <td>
+                                      <span style={{
+                                        fontFamily: 'var(--fh)', fontWeight: 800, fontSize: 13,
+                                        color: snapshot > 0 ? 'var(--red)' : snapshot < 0 ? 'var(--green)' : 'var(--ink3)'
+                                      }}>
+                                        {snapshot > 0 ? `${fmt(snapshot)} owed` : snapshot < 0 ? `${fmt(Math.abs(snapshot))} ahead` : '✓ Settled'}
+                                      </span>
+                                    </td>
+                                  </tr>
+                                ));
+                              })()}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
