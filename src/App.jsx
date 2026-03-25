@@ -15,354 +15,405 @@ import {
 import { db } from './firebase';
 
 // ─── CSS ─────────────────────────────────────────────────────────────────────
+// ─── CSS ─────────────────────────────────────────────────────────────────────
 const CSS = `
 :root {
-  --bg:       #f8f7f4;
-  --bg2:      #f0eeea;
-  --bg3:      #e8e5df;
-  --card:     #ffffff;
-  --border:   #e5e2db;
-  --border2:  #d4d0c8;
-  --ink:      #0f0f0f;
-  --ink2:     #3a3832;
-  --ink3:     #7a7670;
-  --ink4:     #b0aca4;
-  --indigo:   #4f46e5;
-  --indigo2:  #6366f1;
-  --indigobg: rgba(79,70,229,0.08);
-  --indigobrd: rgba(79,70,229,0.2);
-  --green:    #16a34a;
-  --greenbg:  rgba(22,163,74,0.08);
-  --greenbrd: rgba(22,163,74,0.2);
-  --red:      #dc2626;
-  --redbg:    rgba(220,38,38,0.08);
-  --redbrd:   rgba(220,38,38,0.2);
-  --amber:    #d97706;
-  --amberbg:  rgba(217,119,6,0.08);
-  --amberbrd: rgba(217,119,6,0.2);
-  --radius:   14px;
-  --radius-sm:9px;
-  --shadow:   0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
-  --shadow-md:0 4px 24px rgba(0,0,0,0.1);
+  --bg:        #f0f2f8;
+  --bg2:       #e8eaf2;
+  --bg3:       #dde0ec;
+  --card:      #ffffff;
+  --border:    #e4e7f0;
+  --border2:   #cdd1e0;
+  --ink:       #0d0f1a;
+  --ink2:      #2d3148;
+  --ink3:      #7b80a0;
+  --ink4:      #b0b5cc;
+  --purple:    #6c47ff;
+  --purple2:   #8b6fff;
+  --purplebg:  rgba(108,71,255,0.08);
+  --purplebrd: rgba(108,71,255,0.2);
+  --teal:      #0abf8f;
+  --tealbg:    rgba(10,191,143,0.09);
+  --tealbrd:   rgba(10,191,143,0.22);
+  --green:     #0aaf6e;
+  --greenbg:   rgba(10,175,110,0.09);
+  --greenbrd:  rgba(10,175,110,0.22);
+  --red:       #f04060;
+  --redbg:     rgba(240,64,96,0.08);
+  --redbrd:    rgba(240,64,96,0.22);
+  --amber:     #f08c20;
+  --amberbg:   rgba(240,140,32,0.09);
+  --amberbrd:  rgba(240,140,32,0.22);
+  --nav-h:     68px;
+  --topbar-h:  60px;
+  --radius:    18px;
+  --radius-sm: 12px;
+  --radius-xs: 8px;
+  --shadow-sm: 0 1px 3px rgba(13,15,26,0.06), 0 2px 8px rgba(13,15,26,0.04);
+  --shadow:    0 4px 20px rgba(13,15,26,0.08), 0 1px 4px rgba(13,15,26,0.04);
+  --shadow-lg: 0 12px 40px rgba(13,15,26,0.14), 0 4px 12px rgba(13,15,26,0.06);
   --fh: 'Sora', system-ui, sans-serif;
   --fb: 'Plus Jakarta Sans', system-ui, sans-serif;
 }
 *, *::before, *::after { box-sizing: border-box; }
-body { background: var(--bg); font-family: var(--fb); color: var(--ink); }
+html { scroll-behavior: smooth; }
+body { background: var(--bg); font-family: var(--fb); color: var(--ink); -webkit-tap-highlight-color: transparent; }
+::-webkit-scrollbar { width: 3px; height: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
 
-/* ── LAYOUT ── */
+/* ══ APP SHELL ══ */
 .ft-app { min-height: 100vh; }
-.shell { display: flex; flex-direction: column; min-height: 100vh; background: var(--bg); }
+.shell  { display: flex; flex-direction: column; min-height: 100vh; }
+
+/* ══ TOP BAR ══ */
 .topbar {
-  position: sticky; top: 0; z-index: 100;
-  background: rgba(248,247,244,0.92); backdrop-filter: blur(20px);
-  border-bottom: 1px solid var(--border);
-  height: 60px; display: flex; align-items: center;
-  justify-content: space-between; padding: 0 20px; gap: 12px;
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  height: var(--topbar-h);
+  background: rgba(240,242,248,0.9); backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border-bottom: 1px solid rgba(228,231,240,0.8);
+  display: flex; align-items: center; justify-content: space-between; padding: 0 18px;
 }
-.topbar-brand { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.topbar-brand { display: flex; align-items: center; gap: 10px; }
 .brand-icon {
-  width: 34px; height: 34px; border-radius: 10px;
-  background: var(--indigo); display: flex; align-items: center;
-  justify-content: center; font-size: 16px; flex-shrink: 0;
+  width: 36px; height: 36px; border-radius: 11px; flex-shrink: 0;
+  background: linear-gradient(135deg, #6c47ff 0%, #a78bfa 100%);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; box-shadow: 0 4px 12px rgba(108,71,255,0.35);
 }
-.brand-name { font-family: var(--fh); font-size: 18px; font-weight: 700; color: var(--ink); }
-.brand-sub  { font-size: 10px; color: var(--ink3); letter-spacing: 0.06em; text-transform: uppercase; }
-.topbar-center { flex: 1; display: flex; justify-content: center; }
-.topbar-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.brand-name { font-family: var(--fh); font-size: 18px; font-weight: 800; color: var(--ink); letter-spacing: -0.3px; }
+.topbar-right { display: flex; align-items: center; gap: 8px; }
 .user-chip {
-  display: flex; align-items: center; gap: 8px;
+  display: flex; align-items: center; gap: 7px;
   background: var(--card); border: 1px solid var(--border);
-  border-radius: 40px; padding: 5px 12px 5px 6px;
+  border-radius: 30px; padding: 4px 12px 4px 5px; box-shadow: var(--shadow-sm);
 }
 .user-avatar {
-  width: 26px; height: 26px; border-radius: 50%;
-  background: var(--indigo); display: flex; align-items: center;
-  justify-content: center; font-size: 11px; font-weight: 700; color: white;
+  width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+  background: linear-gradient(135deg, #6c47ff, #a78bfa);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 800; color: white;
 }
-.user-name { font-size: 13px; font-weight: 500; color: var(--ink2); }
-.main { flex: 1; padding: 24px 20px 72px; max-width: 1100px; margin: 0 auto; width: 100%; }
+.user-name { font-size: 13px; font-weight: 600; color: var(--ink2); }
 
-/* ── NAV TABS ── */
-.nav-tabs {
-  display: flex; gap: 2px; background: var(--bg2); border: 1px solid var(--border);
-  border-radius: 12px; padding: 4px; margin-bottom: 28px; overflow-x: auto;
-  scrollbar-width: none;
+/* ══ MAIN CONTENT ══ */
+.main {
+  flex: 1; padding: calc(var(--topbar-h) + 20px) 16px calc(var(--nav-h) + 24px);
+  max-width: 680px; margin: 0 auto; width: 100%;
 }
-.nav-tabs::-webkit-scrollbar { display: none; }
-.nav-tab {
-  flex: 1; min-width: max-content; padding: 8px 16px; border: none;
-  border-radius: 9px; cursor: pointer; font-family: var(--fb);
-  font-size: 13px; font-weight: 500; background: transparent;
-  color: var(--ink3); transition: all 0.18s; white-space: nowrap;
-  display: flex; align-items: center; gap: 6px; justify-content: center;
+
+/* ══ BOTTOM NAV ══ */
+.bottom-nav {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+  height: var(--nav-h);
+  background: rgba(255,255,255,0.94); backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border-top: 1px solid rgba(228,231,240,0.9);
+  display: flex; align-items: center; justify-content: space-around;
+  padding: 0 4px 4px; box-shadow: 0 -4px 24px rgba(13,15,26,0.07);
 }
-.nav-tab:hover { color: var(--ink); background: rgba(0,0,0,0.04); }
-.nav-tab.active { background: var(--card); color: var(--indigo); font-weight: 600; box-shadow: var(--shadow); }
-
-/* ── CARDS ── */
-.cards-grid { display: grid; gap: 14px; margin-bottom: 24px; }
-.cols-4 { grid-template-columns: repeat(4, 1fr); }
-.cols-3 { grid-template-columns: repeat(3, 1fr); }
-.cols-2 { grid-template-columns: repeat(2, 1fr); }
-.stat-card {
-  background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
-  padding: 20px; box-shadow: var(--shadow); transition: box-shadow 0.2s, border-color 0.2s;
+.bnav-item {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  flex: 1; padding: 8px 4px; background: none; border: none;
+  cursor: pointer; border-radius: 14px; transition: all 0.18s;
+  -webkit-tap-highlight-color: transparent;
 }
-.stat-card:hover { box-shadow: var(--shadow-md); border-color: var(--border2); }
-.stat-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; margin-bottom: 14px; }
-.stat-label { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink3); margin-bottom: 6px; }
-.stat-value { font-family: var(--fh); font-size: 26px; font-weight: 700; color: var(--ink); line-height: 1; }
-.stat-sub { font-size: 12px; color: var(--ink3); margin-top: 4px; }
-.stat-value.green { color: var(--green); }
-.stat-value.red   { color: var(--red);   }
-.stat-value.indigo{ color: var(--indigo);}
+.bnav-item:active { transform: scale(0.9); }
+.bnav-icon {
+  width: 44px; height: 32px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; transition: all 0.22s;
+}
+.bnav-item.active .bnav-icon { background: var(--purplebg); }
+.bnav-label { font-size: 10px; font-weight: 600; color: var(--ink4); letter-spacing: 0.02em; transition: color 0.18s; font-family: var(--fb); }
+.bnav-item.active .bnav-label { color: var(--purple); }
 
-/* ── PAGE HEADER ── */
-.page-head { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 22px; gap: 12px; flex-wrap: wrap; }
-.page-title { font-family: var(--fh); font-size: 24px; font-weight: 700; color: var(--ink); }
-.page-sub   { font-size: 13px; color: var(--ink3); margin-top: 3px; }
+/* ══ FAB ══ */
+.fab {
+  position: fixed; bottom: calc(var(--nav-h) + 14px); right: 18px; z-index: 110;
+  width: 54px; height: 54px; border-radius: 18px; border: none;
+  background: linear-gradient(135deg, #6c47ff 0%, #a78bfa 100%);
+  color: white; font-size: 26px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 8px 24px rgba(108,71,255,0.45), 0 2px 8px rgba(108,71,255,0.2);
+  transition: all 0.2s; -webkit-tap-highlight-color: transparent;
+}
+.fab:active { transform: scale(0.88); box-shadow: 0 4px 14px rgba(108,71,255,0.35); }
 
-/* ── BUTTONS ── */
+/* ══ HERO BALANCE CARD ══ */
+.hero-card {
+  background: linear-gradient(140deg, #1a0a4f 0%, #3d1fa3 45%, #6c47ff 100%);
+  border-radius: 24px; padding: 26px 22px 22px;
+  margin-bottom: 18px; position: relative; overflow: hidden;
+  box-shadow: 0 8px 32px rgba(108,71,255,0.4), 0 2px 8px rgba(108,71,255,0.2);
+}
+.hero-card::before {
+  content: ''; position: absolute; top: -40px; right: -40px;
+  width: 160px; height: 160px; border-radius: 50%;
+  background: rgba(255,255,255,0.06); pointer-events: none;
+}
+.hero-card::after {
+  content: ''; position: absolute; bottom: -30px; left: 20px;
+  width: 120px; height: 120px; border-radius: 50%;
+  background: rgba(255,255,255,0.04); pointer-events: none;
+}
+.hero-greeting { font-size: 13px; color: rgba(255,255,255,0.65); font-weight: 500; margin-bottom: 4px; }
+.hero-name { font-family: var(--fh); font-size: 22px; font-weight: 800; color: white; margin-bottom: 20px; }
+.hero-pending-label { font-size: 11px; color: rgba(255,255,255,0.55); letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700; margin-bottom: 6px; }
+.hero-pending-value { font-family: var(--fh); font-size: 38px; font-weight: 800; color: white; line-height: 1; margin-bottom: 20px; letter-spacing: -1px; }
+.hero-row { display: flex; gap: 10px; }
+.hero-mini { flex: 1; background: rgba(255,255,255,0.12); border-radius: 14px; padding: 12px 14px; backdrop-filter: blur(8px); }
+.hero-mini-label { font-size: 10px; color: rgba(255,255,255,0.6); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 4px; }
+.hero-mini-value { font-family: var(--fh); font-size: 16px; font-weight: 700; color: white; }
+
+/* ══ QUICK STATS ══ */
+.quick-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 18px; }
+.quick-card {
+  background: var(--card); border-radius: var(--radius); padding: 16px;
+  box-shadow: var(--shadow-sm); border: 1px solid var(--border);
+  display: flex; align-items: center; gap: 12px; transition: all 0.18s;
+}
+.quick-card:active { transform: scale(0.97); }
+.quick-ico { width: 42px; height: 42px; border-radius: 13px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+.quick-label { font-size: 10px; font-weight: 700; color: var(--ink3); letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 3px; }
+.quick-value { font-family: var(--fh); font-size: 17px; font-weight: 800; color: var(--ink); }
+.quick-value.green  { color: var(--green); }
+.quick-value.red    { color: var(--red); }
+.quick-value.amber  { color: var(--amber); }
+.quick-value.purple { color: var(--purple); }
+
+/* ══ SECTION TITLE ══ */
+.sec-title { font-family: var(--fh); font-size: 16px; font-weight: 800; color: var(--ink); margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; }
+.sec-more  { font-size: 12px; font-weight: 600; color: var(--purple); cursor: pointer; background: none; border: none; font-family: var(--fb); }
+.page-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; gap: 12px; flex-wrap: wrap; }
+.page-title { font-family: var(--fh); font-size: 22px; font-weight: 800; color: var(--ink); }
+.page-sub   { font-size: 13px; color: var(--ink3); margin-top: 2px; }
+
+/* ══ ACTIVITY FEED ══ */
+.activity-card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow-sm); border: 1px solid var(--border); overflow: hidden; margin-bottom: 16px; }
+.activity-row {
+  display: flex; align-items: center; gap: 12px; padding: 13px 16px;
+  border-bottom: 1px solid var(--border); transition: background 0.14s;
+}
+.activity-row:last-child { border-bottom: none; }
+.activity-row:active { background: var(--bg); }
+.activity-ico { width: 40px; height: 40px; border-radius: 13px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+.activity-desc { flex: 1; min-width: 0; }
+.activity-title { font-size: 14px; font-weight: 700; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.activity-sub   { font-size: 12px; color: var(--ink3); margin-top: 1px; }
+.activity-amt   { font-family: var(--fh); font-size: 15px; font-weight: 800; flex-shrink: 0; }
+
+/* ══ FRIEND CARD ══ */
+.friend-grid { display: flex; flex-direction: column; gap: 10px; }
+.friend-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow-sm); }
+.friend-card:active { transform: scale(0.99); }
+.friend-head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.friend-avatar { border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--fh); font-weight: 800; color: white; flex-shrink: 0; }
+.friend-name  { font-family: var(--fh); font-size: 16px; font-weight: 800; color: var(--ink); }
+.friend-phone { font-size: 12px; color: var(--ink3); margin-top: 1px; }
+.friend-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.fstat { background: var(--bg); border-radius: var(--radius-xs); padding: 10px; }
+.fstat-label { font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink4); margin-bottom: 3px; }
+.fstat-value { font-family: var(--fh); font-size: 14px; font-weight: 800; color: var(--ink); }
+.fstat-value.green  { color: var(--green); }
+.fstat-value.red    { color: var(--red); }
+.fstat-value.purple { color: var(--purple); }
+.friend-actions { display: flex; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }
+
+/* ══ ACCOUNT CARD ══ */
+.account-grid { display: flex; flex-direction: column; gap: 10px; }
+.account-card { border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow-sm); }
+.account-card-inner { padding: 18px; }
+.account-chip { display: inline-flex; align-items: center; gap: 5px; background: rgba(255,255,255,0.2); border-radius: 20px; padding: 3px 10px; font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 14px; }
+.account-name { font-family: var(--fh); font-size: 18px; font-weight: 800; color: white; margin-bottom: 2px; }
+.account-sub  { font-size: 11px; color: rgba(255,255,255,0.6); margin-bottom: 16px; }
+.account-spent { font-family: var(--fh); font-size: 30px; font-weight: 800; color: white; margin-bottom: 4px; }
+.account-spent-label { font-size: 11px; color: rgba(255,255,255,0.6); }
+.account-actions { background: rgba(255,255,255,0.1); display: flex; border-top: 1px solid rgba(255,255,255,0.15); }
+.account-action-btn { flex: 1; padding: 13px; background: none; border: none; color: rgba(255,255,255,0.85); cursor: pointer; font-family: var(--fb); font-size: 13px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 6px; transition: background 0.15s; border-right: 1px solid rgba(255,255,255,0.12); }
+.account-action-btn:last-child { border-right: none; }
+.account-action-btn:active { background: rgba(255,255,255,0.1); }
+.limit-bar-track { border-radius: 6px; height: 5px; overflow: hidden; margin: 8px 0 5px; background: rgba(255,255,255,0.2); }
+.limit-bar-fill  { height: 100%; border-radius: 6px; transition: width 0.5s ease; background: rgba(255,255,255,0.85); }
+.limit-row { display: flex; justify-content: space-between; font-size: 11px; color: rgba(255,255,255,0.65); margin-bottom: 3px; }
+.limit-available { font-size: 13px; font-weight: 700; color: white; }
+
+/* ══ ACCOUNT BREAKDOWN ══ */
+.breakdown-panel { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); margin-top: 8px; overflow: hidden; box-shadow: var(--shadow-sm); }
+.breakdown-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.breakdown-table th { padding: 10px 14px; text-align: left; font-size: 10px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: var(--ink3); background: var(--bg); border-bottom: 1px solid var(--border); }
+.breakdown-table td { padding: 12px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.breakdown-table tr:last-child td { border-bottom: none; }
+
+/* ══ BUTTONS ══ */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-  padding: 9px 18px; border-radius: var(--radius-sm); font-family: var(--fb);
-  font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.18s;
-  border: none; white-space: nowrap; letter-spacing: 0.01em;
+  padding: 11px 20px; border-radius: var(--radius-sm); font-family: var(--fb);
+  font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.18s;
+  border: none; white-space: nowrap; -webkit-tap-highlight-color: transparent;
 }
-.btn-primary { background: var(--indigo); color: white; }
-.btn-primary:hover { background: var(--indigo2); transform: translateY(-1px); box-shadow: 0 4px 14px rgba(79,70,229,0.35); }
-.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
-.btn-ghost { background: transparent; color: var(--ink2); border: 1px solid var(--border); }
-.btn-ghost:hover { background: var(--bg2); border-color: var(--border2); }
-.btn-danger { background: var(--redbg); color: var(--red); border: 1px solid var(--redbrd); }
-.btn-danger:hover { background: rgba(220,38,38,0.15); }
-.btn-success { background: var(--greenbg); color: var(--green); border: 1px solid var(--greenbrd); }
-.btn-success:hover { background: rgba(22,163,74,0.15); }
-.btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 7px; }
-.btn-icon { padding: 7px; border-radius: 8px; }
-.btn-full { width: 100%; justify-content: center; }
+.btn-primary  { background: linear-gradient(135deg, #6c47ff, #a78bfa); color: white; box-shadow: 0 4px 14px rgba(108,71,255,0.35); }
+.btn-primary:active { transform: scale(0.97); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-ghost    { background: var(--bg); color: var(--ink2); border: 1.5px solid var(--border); }
+.btn-ghost:active { background: var(--bg2); }
+.btn-danger   { background: var(--redbg); color: var(--red); border: 1px solid var(--redbrd); }
+.btn-danger:active { background: rgba(240,64,96,0.15); }
+.btn-success  { background: var(--greenbg); color: var(--green); border: 1px solid var(--greenbrd); }
+.btn-sm   { padding: 7px 14px; font-size: 12px; border-radius: var(--radius-xs); }
+.btn-icon { padding: 9px; border-radius: 11px; }
+.btn-full { width: 100%; }
 
-/* ── FORM ── */
-.form-section { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); max-width: 560px; }
-.form-title { font-family: var(--fh); font-size: 18px; font-weight: 700; color: var(--ink); margin-bottom: 4px; }
-.form-sub   { font-size: 13px; color: var(--ink3); margin-bottom: 22px; }
-.form-row   { display: grid; gap: 14px; margin-bottom: 14px; }
-.form-row.g2{ grid-template-columns: 1fr 1fr; }
-.field      { display: flex; flex-direction: column; gap: 5px; }
-.field-label{ font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink2); }
-.field-input{
+/* ══ FORM ══ */
+.form-section { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow-sm); }
+.form-title   { font-family: var(--fh); font-size: 18px; font-weight: 800; color: var(--ink); margin-bottom: 4px; }
+.form-sub     { font-size: 13px; color: var(--ink3); margin-bottom: 20px; }
+.form-row     { display: grid; gap: 12px; margin-bottom: 12px; }
+.form-row.g2  { grid-template-columns: 1fr 1fr; }
+.field        { display: flex; flex-direction: column; gap: 6px; }
+.field-label  { font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink2); }
+.field-input  {
   background: var(--bg); border: 1.5px solid var(--border); border-radius: var(--radius-sm);
-  padding: 10px 13px; font-size: 14px; color: var(--ink); font-family: var(--fb);
+  padding: 12px 14px; font-size: 15px; color: var(--ink); font-family: var(--fb);
   transition: border-color 0.18s, box-shadow 0.18s; outline: none; width: 100%;
 }
-.field-input:focus { border-color: var(--indigo); box-shadow: 0 0 0 3px var(--indigobg); }
+.field-input:focus { border-color: var(--purple); box-shadow: 0 0 0 3px var(--purplebg); }
 .field-input::placeholder { color: var(--ink4); }
 select.field-input { cursor: pointer; }
 select.field-input option { background: white; color: var(--ink); }
 .input-wrap { position: relative; }
-.input-wrap .field-input { padding-right: 42px; }
-.eye-btn { position: absolute; right: 11px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--ink3); padding: 4px; display: flex; align-items: center; transition: color 0.18s; }
-.eye-btn:hover { color: var(--indigo); }
+.input-wrap .field-input { padding-right: 44px; }
+.eye-btn { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--ink3); padding: 4px; display: flex; align-items: center; }
 
-/* ── TABLE ── */
-.table-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
-.table-wrap { overflow-x: auto; }
-table { width: 100%; border-collapse: collapse; min-width: 560px; }
-thead tr { background: var(--bg2); border-bottom: 1px solid var(--border); }
-th { padding: 11px 15px; text-align: left; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink3); white-space: nowrap; }
-td { padding: 13px 15px; font-size: 13.5px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+/* ══ TABLE ══ */
+.table-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); overflow: hidden; }
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+table { width: 100%; border-collapse: collapse; min-width: 520px; }
+thead tr { background: var(--bg); }
+th { padding: 11px 14px; text-align: left; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink3); border-bottom: 1px solid var(--border); white-space: nowrap; }
+td { padding: 13px 14px; font-size: 13.5px; border-bottom: 1px solid var(--border); vertical-align: middle; }
 tbody tr:last-child td { border-bottom: none; }
-tbody tr:hover { background: var(--bg); }
-.td-bold  { font-weight: 600; color: var(--ink); }
-.td-muted { color: var(--ink3); font-size: 13px; }
-.td-green { color: var(--green); font-weight: 600; }
-.td-red   { color: var(--red); font-weight: 600; }
-.td-indigo{ color: var(--indigo); font-weight: 600; }
+tbody tr:active { background: var(--bg); }
+.td-bold  { font-weight: 700; color: var(--ink); }
+.td-muted { color: var(--ink3); font-size: 12px; }
+.td-green { color: var(--green); font-weight: 700; }
+.td-red   { color: var(--red); font-weight: 700; }
+.td-purple{ color: var(--purple); font-weight: 700; }
 
-/* ── BADGE ── */
-.badge { display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+/* ══ BADGE ══ */
+.badge { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
 .badge-green  { background: var(--greenbg);  color: var(--green);  border: 1px solid var(--greenbrd); }
 .badge-red    { background: var(--redbg);    color: var(--red);    border: 1px solid var(--redbrd); }
-.badge-indigo { background: var(--indigobg); color: var(--indigo); border: 1px solid var(--indigobrd); }
+.badge-purple { background: var(--purplebg); color: var(--purple); border: 1px solid var(--purplebrd); }
 .badge-amber  { background: var(--amberbg);  color: var(--amber);  border: 1px solid var(--amberbrd); }
 .badge-gray   { background: var(--bg2); color: var(--ink3); border: 1px solid var(--border); }
+.badge-indigo { background: var(--purplebg); color: var(--purple); border: 1px solid var(--purplebrd); }
+.bal-chip { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; }
 
-/* ── FRIEND CARD ── */
-.friend-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
-.friend-card {
-  background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
-  padding: 20px; box-shadow: var(--shadow); transition: all 0.18s; cursor: default;
-}
-.friend-card:hover { box-shadow: var(--shadow-md); border-color: var(--border2); transform: translateY(-2px); }
-.friend-head { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
-.friend-avatar { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--fh); font-size: 16px; font-weight: 700; color: white; flex-shrink: 0; }
-.friend-name { font-family: var(--fh); font-size: 16px; font-weight: 700; color: var(--ink); }
-.friend-phone{ font-size: 12px; color: var(--ink3); margin-top: 2px; }
-.friend-stats{ display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.fstat { background: var(--bg); border-radius: var(--radius-sm); padding: 10px 12px; }
-.fstat-label { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink4); margin-bottom: 3px; }
-.fstat-value { font-family: var(--fh); font-size: 14px; font-weight: 700; color: var(--ink); }
-.fstat-value.green  { color: var(--green); }
-.fstat-value.red    { color: var(--red); }
-.fstat-value.indigo { color: var(--indigo); }
-.friend-actions { display: flex; gap: 6px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
+/* ══ TXN TYPE CHIPS ══ */
+.txn-expense  { background: var(--redbg);   color: var(--red);   border-radius: 6px; padding: 3px 9px; font-size: 11px; font-weight: 700; }
+.txn-payment  { background: var(--greenbg); color: var(--green); border-radius: 6px; padding: 3px 9px; font-size: 11px; font-weight: 700; }
+.txn-personal { background: var(--amberbg); color: var(--amber); border-radius: 6px; padding: 3px 9px; font-size: 11px; font-weight: 700; }
 
-/* ── ACCOUNT CARD ── */
-.account-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
-.account-card {
-  background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
-  padding: 20px; box-shadow: var(--shadow); transition: all 0.18s;
-}
-.account-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
-.account-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; margin-bottom: 14px; }
-.account-name { font-family: var(--fh); font-size: 16px; font-weight: 700; color: var(--ink); margin-bottom: 4px; }
-.account-type { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 14px; }
-.account-spent { font-family: var(--fh); font-size: 22px; font-weight: 700; color: var(--ink); }
-.account-spent-label { font-size: 11px; color: var(--ink3); margin-top: 2px; }
-.limit-bar-track { background: var(--bg2); border-radius: 6px; height: 7px; overflow: hidden; margin: 10px 0 5px; }
-.limit-bar-fill  { height: 100%; border-radius: 6px; transition: width 0.5s ease; }
-.limit-row { display: flex; justify-content: space-between; font-size: 11px; color: var(--ink3); margin-bottom: 4px; }
-.limit-available { font-size: 13px; font-weight: 700; }
-/* Friend × Account breakdown table */
-.breakdown-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-.breakdown-table th { padding: 9px 14px; text-align: left; font-size: 11px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: var(--ink3); background: var(--bg2); border-bottom: 1px solid var(--border); white-space: nowrap; }
-.breakdown-table td { padding: 11px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
-.breakdown-table tr:last-child td { border-bottom: none; }
-.breakdown-table tbody tr:hover { background: var(--bg); }
-.account-actions { display: flex; gap: 6px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border); }
-
-/* ── LIMIT / BALANCE BAR ── */
-.limit-bar-track { background: var(--bg2); border-radius: 6px; height: 7px; overflow: hidden; margin: 8px 0 4px; }
-.limit-bar-fill  { height: 100%; border-radius: 6px; transition: width 0.5s ease; }
-.limit-row { display: flex; justify-content: space-between; font-size: 11px; color: var(--ink3); margin-bottom: 2px; }
-.limit-label { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink4); margin-bottom: 4px; margin-top: 12px; }
-
-/* ── FILTER BAR ── */
-.filter-bar { display: flex; gap: 10px; margin-bottom: 18px; flex-wrap: wrap; align-items: center; }
-.filter-select {
-  background: var(--card); border: 1.5px solid var(--border); border-radius: var(--radius-sm);
-  padding: 8px 13px; font-size: 13px; font-family: var(--fb); color: var(--ink2);
-  outline: none; cursor: pointer; transition: border-color 0.18s;
-}
-.filter-select:focus { border-color: var(--indigo); }
-.filter-date { padding: 8px 13px; }
-.filter-clear { font-size: 12px; color: var(--ink3); cursor: pointer; text-decoration: underline; background: none; border: none; font-family: var(--fb); }
-.filter-clear:hover { color: var(--red); }
-
-/* ── LOGIN PAGE ── */
-.login-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; background: var(--bg); }
-.login-bg {
-  position: fixed; inset: 0; pointer-events: none; overflow: hidden;
-}
-.login-blob {
-  position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.18;
-}
-.login-card {
-  background: var(--card); border: 1px solid var(--border); border-radius: 20px;
-  padding: 44px 40px; width: 100%; max-width: 400px; box-shadow: var(--shadow-md);
-  position: relative; z-index: 1;
-}
-.login-logo { display: flex; align-items: center; gap: 12px; margin-bottom: 32px; }
-.login-logo-icon { width: 48px; height: 48px; border-radius: 14px; background: var(--indigo); display: flex; align-items: center; justify-content: center; font-size: 24px; }
-.login-logo-text { font-family: var(--fh); font-size: 26px; font-weight: 800; color: var(--ink); }
-.login-logo-sub  { font-size: 12px; color: var(--ink3); }
-.login-title { font-family: var(--fh); font-size: 22px; font-weight: 700; color: var(--ink); margin-bottom: 6px; }
-.login-sub   { font-size: 13px; color: var(--ink3); margin-bottom: 28px; }
-.login-error { background: var(--redbg); border: 1px solid var(--redbrd); border-radius: 8px; padding: 10px 14px; font-size: 13px; color: var(--red); margin-bottom: 16px; }
-
-/* ── EMPTY STATE ── */
-.empty { padding: 56px 20px; text-align: center; }
-.empty-icon { font-size: 44px; margin-bottom: 12px; opacity: 0.3; }
-.empty-text { font-size: 15px; color: var(--ink3); font-weight: 500; }
-.empty-sub  { font-size: 13px; color: var(--ink4); margin-top: 4px; }
-
-/* ── TOAST ── */
-.toast {
-  position: fixed; bottom: 22px; right: 22px; z-index: 9999;
-  background: var(--ink); color: white; border-radius: 11px;
-  padding: 13px 20px; font-size: 13px; font-weight: 500;
-  box-shadow: var(--shadow-md); animation: slideUp 0.28s ease;
-  max-width: 300px; display: flex; align-items: center; gap: 8px;
-}
-.toast.success { background: #166534; }
-.toast.error   { background: #991b1b; }
-@keyframes slideUp { from { transform: translateY(16px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-
-/* ── LOADING ── */
-.loader { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 60px 20px; color: var(--ink3); font-size: 14px; }
-.spinner { width: 24px; height: 24px; border: 2px solid var(--border); border-top-color: var(--indigo); border-radius: 50%; animation: spin 0.65s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
-
-/* ── DIVIDER ── */
-.divider { height: 1px; background: var(--border); margin: 20px 0; }
-
-/* ── MODAL ── */
+/* ══ BOTTOM SHEET MODAL ══ */
 .modal-overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.35);
-  backdrop-filter: blur(4px); z-index: 200;
-  display: flex; align-items: center; justify-content: center; padding: 20px;
+  position: fixed; inset: 0; background: rgba(13,15,26,0.5);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  z-index: 200; display: flex; align-items: flex-end; justify-content: center;
 }
 .modal {
-  background: var(--card); border-radius: 18px; padding: 28px;
-  width: 100%; max-width: 480px; box-shadow: 0 20px 60px rgba(0,0,0,0.2);
-  animation: modalIn 0.22s ease;
+  background: var(--card); border-radius: 26px 26px 0 0;
+  width: 100%; max-width: 520px; max-height: 92vh; overflow-y: auto;
+  box-shadow: 0 -8px 40px rgba(13,15,26,0.18);
+  animation: sheetUp 0.3s cubic-bezier(0.34,1.1,0.64,1);
 }
-@keyframes modalIn { from { transform: scale(0.94); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-.modal-title { font-family: var(--fh); font-size: 20px; font-weight: 700; color: var(--ink); margin-bottom: 4px; }
-.modal-sub   { font-size: 13px; color: var(--ink3); margin-bottom: 22px; }
-.modal-actions { display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end; }
+@keyframes sheetUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.modal-handle { width: 36px; height: 4px; background: var(--border2); border-radius: 2px; margin: 12px auto 0; }
+.modal-body   { padding: 20px 22px 32px; }
+.modal-title  { font-family: var(--fh); font-size: 20px; font-weight: 800; color: var(--ink); margin-bottom: 4px; }
+.modal-sub    { font-size: 13px; color: var(--ink3); margin-bottom: 20px; }
+.modal-actions{ display: flex; gap: 10px; margin-top: 18px; }
 
-/* ── CHART CARD ── */
-.chart-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; box-shadow: var(--shadow); margin-bottom: 20px; }
-.chart-title { font-family: var(--fh); font-size: 16px; font-weight: 700; color: var(--ink); margin-bottom: 18px; }
-.recharts-tooltip-wrapper .custom-tip { background: var(--ink); color: white; padding: 10px 14px; border-radius: 9px; font-size: 13px; }
-.custom-tip-label { font-size: 11px; opacity: 0.7; margin-bottom: 3px; }
-.custom-tip-val   { font-weight: 700; font-size: 15px; }
-
-/* ── BALANCE CHIP ── */
-.bal-chip {
-  display: inline-flex; align-items: center; gap: 5px;
-  padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 700;
+/* ══ FILTER BAR ══ */
+.filter-bar { display: flex; gap: 8px; margin-bottom: 14px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+.filter-bar::-webkit-scrollbar { display: none; }
+.filter-select {
+  background: var(--card); border: 1.5px solid var(--border); border-radius: 20px;
+  padding: 7px 14px; font-size: 13px; font-family: var(--fb); color: var(--ink2);
+  outline: none; cursor: pointer; white-space: nowrap; flex-shrink: 0; font-weight: 500;
 }
+.filter-select:focus { border-color: var(--purple); }
+.filter-date  { padding: 7px 12px; }
+.filter-clear { font-size: 12px; color: var(--ink3); cursor: pointer; background: none; border: none; font-family: var(--fb); flex-shrink: 0; }
 
-/* ── TXN TYPE CHIP ── */
-.txn-expense  { background: var(--redbg);    color: var(--red);    border-radius: 6px; padding: 2px 8px; font-size: 11px; font-weight: 700; letter-spacing: 0.04em; }
-.txn-payment  { background: var(--greenbg);  color: var(--green);  border-radius: 6px; padding: 2px 8px; font-size: 11px; font-weight: 700; letter-spacing: 0.04em; }
-.txn-personal { background: var(--amberbg);  color: var(--amber);  border-radius: 6px; padding: 2px 8px; font-size: 11px; font-weight: 700; letter-spacing: 0.04em; }
-/* Account Statement */
-.stmt-header { background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%); border-radius: var(--radius); padding: 24px; color: white; margin-bottom: 20px; }
-.stmt-header.bank { background: linear-gradient(135deg, #059669 0%, #16a34a 100%); }
-.stmt-total-row { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 16px; }
-.stmt-total-box { background: rgba(255,255,255,0.15); border-radius: 10px; padding: 12px 16px; flex: 1; min-width: 110px; }
-.stmt-total-label { font-size: 11px; opacity: 0.8; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 4px; }
-.stmt-total-value { font-family: var(--fh); font-size: 20px; font-weight: 700; }
+/* ══ LOGIN ══ */
+.login-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; background: var(--bg); }
+.login-bg   { position: fixed; inset: 0; pointer-events: none; overflow: hidden; }
+.login-blob { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.15; }
+.login-card {
+  background: var(--card); border: 1px solid var(--border); border-radius: 26px;
+  padding: 36px 28px; width: 100%; max-width: 400px;
+  box-shadow: var(--shadow-lg); position: relative; z-index: 1;
+}
+.login-logo      { display: flex; align-items: center; gap: 12px; margin-bottom: 28px; }
+.login-logo-icon { width: 50px; height: 50px; border-radius: 16px; background: linear-gradient(135deg,#6c47ff,#a78bfa); display: flex; align-items: center; justify-content: center; font-size: 26px; box-shadow: 0 6px 18px rgba(108,71,255,0.4); }
+.login-logo-text { font-family: var(--fh); font-size: 26px; font-weight: 800; color: var(--ink); }
+.login-logo-sub  { font-size: 12px; color: var(--ink3); }
+.login-title { font-family: var(--fh); font-size: 22px; font-weight: 800; color: var(--ink); margin-bottom: 6px; }
+.login-sub   { font-size: 13px; color: var(--ink3); margin-bottom: 24px; }
+.login-error { background: var(--redbg); border: 1px solid var(--redbrd); border-radius: 10px; padding: 11px 14px; font-size: 13px; color: var(--red); margin-bottom: 14px; }
 
-/* ── INSIGHT ROW ── */
-.insight-row { display: flex; align-items: center; justify-content: space-between; padding: 13px 0; border-bottom: 1px solid var(--border); }
+/* ══ EMPTY ══ */
+.empty { padding: 52px 20px; text-align: center; }
+.empty-icon { font-size: 48px; margin-bottom: 14px; }
+.empty-text { font-size: 16px; color: var(--ink3); font-weight: 700; }
+.empty-sub  { font-size: 13px; color: var(--ink4); margin-top: 4px; }
+
+/* ══ TOAST ══ */
+.toast {
+  position: fixed; bottom: calc(var(--nav-h) + 14px); left: 50%; transform: translateX(-50%);
+  z-index: 9999; background: var(--ink2); color: white; border-radius: 14px;
+  padding: 13px 20px; font-size: 13px; font-weight: 600; white-space: nowrap;
+  box-shadow: var(--shadow-lg); animation: toastPop 0.3s cubic-bezier(0.34,1.1,0.64,1);
+  display: flex; align-items: center; gap: 8px;
+}
+.toast.success { background: #0a6640; }
+.toast.error   { background: #8b1422; }
+@keyframes toastPop { from { transform: translateX(-50%) translateY(12px) scale(0.95); opacity: 0; } to { transform: translateX(-50%) translateY(0) scale(1); opacity: 1; } }
+
+/* ══ LOADING ══ */
+.loader { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; min-height: 100vh; color: var(--ink3); font-size: 14px; }
+.spinner { width: 28px; height: 28px; border: 2.5px solid var(--border); border-top-color: var(--purple); border-radius: 50%; animation: spin 0.65s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ══ CHARTS ══ */
+.chart-card  { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow-sm); margin-bottom: 14px; }
+.chart-title { font-family: var(--fh); font-size: 15px; font-weight: 800; color: var(--ink); margin-bottom: 16px; }
+
+/* ══ STATEMENT ══ */
+.stmt-header { border-radius: var(--radius); padding: 22px; color: white; margin-bottom: 16px; box-shadow: var(--shadow); }
+.stmt-header.cc   { background: linear-gradient(135deg, #1a0a4f 0%, #6c47ff 100%); }
+.stmt-header.bank { background: linear-gradient(135deg, #064e3b 0%, #0aaf6e 100%); }
+.stmt-total-row   { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+.stmt-total-box   { background: rgba(255,255,255,0.13); border-radius: 12px; padding: 12px 14px; }
+.stmt-total-label { font-size: 10px; opacity: 0.75; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 4px; }
+.stmt-total-value { font-family: var(--fh); font-size: 18px; font-weight: 800; }
+
+/* ══ INSIGHT ROW ══ */
+.insight-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border); }
 .insight-row:last-child { border-bottom: none; }
+.divider { height: 1px; background: var(--border); margin: 16px 0; }
 
-/* ── RESPONSIVE ── */
-@media (max-width: 900px) {
-  .cols-4 { grid-template-columns: repeat(2, 1fr); }
-  .main   { padding: 20px 16px 60px; }
-  .topbar { padding: 0 14px; }
-}
-@media (max-width: 600px) {
-  .cols-4, .cols-3 { grid-template-columns: repeat(2, 1fr); }
-  .cols-2          { grid-template-columns: 1fr 1fr; }
-  .login-card      { padding: 32px 22px; }
-  .form-section    { padding: 20px; }
-  .form-row.g2     { grid-template-columns: 1fr; }
-  .stat-value      { font-size: 20px; }
-  .page-title      { font-size: 20px; }
-  .brand-name      { font-size: 16px; }
-  .user-name       { display: none; }
-  .toast           { left: 16px; right: 16px; bottom: 16px; }
-  .modal           { padding: 22px; }
+/* ══ RESPONSIVE ══ */
+@media (min-width: 680px) {
+  .quick-row { grid-template-columns: repeat(4, 1fr); }
+  .friend-grid, .account-grid { display: grid; grid-template-columns: 1fr 1fr; }
+  .form-row.g2 { grid-template-columns: 1fr 1fr; }
 }
 @media (max-width: 400px) {
-  .cols-4, .cols-3, .cols-2 { grid-template-columns: 1fr 1fr; }
+  .main { padding-left: 12px; padding-right: 12px; }
+  .hero-pending-value { font-size: 30px; }
 }
 `;
 
@@ -527,7 +578,7 @@ function LoginPage({ onLogin }) {
         <div style={{ marginTop: 20, textAlign: 'center', fontSize: 13, color: 'var(--ink3)' }}>
           {regMode ? 'Already have an account? ' : "Don't have an account? "}
           <button onClick={() => { setRegMode(v => !v); setError(''); }}
-            style={{ background: 'none', border: 'none', color: 'var(--indigo)', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--fb)', fontSize: 13 }}>
+            style={{ background: 'none', border: 'none', color: 'var(--purple)', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--fb)', fontSize: 13 }}>
             {regMode ? 'Sign In' : 'Register'}
           </button>
         </div>
@@ -551,13 +602,13 @@ const ChartTip = ({ active, payload, label }) => {
 // ─── MAIN APP SHELL ───────────────────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════════════════
 function AppShell({ user, onLogout }) {
-  const [tab, setTab]             = useState('dashboard');
-  const [friends, setFriends]     = useState([]);
-  const [accounts, setAccounts]   = useState([]);
-  const [transactions, setTxns]   = useState([]);
-  const [showToast, toastEl]      = useToast();
+  const [tab, setTab]           = useState('dashboard');
+  const [friends, setFriends]   = useState([]);
+  const [accounts, setAccounts] = useState([]);
+  const [transactions, setTxns] = useState([]);
+  const [showTxnForm, setShowTxnForm] = useState(false);
+  const [showToast, toastEl]    = useToast();
 
-  // Real-time listeners
   useEffect(() => {
     const qF = query(collection(db, 'friends'),     where('userId', '==', user.id));
     const qA = query(collection(db, 'accounts'),    where('userId', '==', user.id));
@@ -568,43 +619,36 @@ function AppShell({ user, onLogout }) {
     return () => { u1(); u2(); u3(); };
   }, [user.id]);
 
-  const tabs = [
-    { id: 'dashboard',    label: 'Dashboard',     icon: '📊' },
-    { id: 'transactions', label: 'Transactions',  icon: '💳' },
-    { id: 'friends',      label: 'Friends',       icon: '👥' },
-    { id: 'accounts',     label: 'Accounts',      icon: '🏦' },
-    { id: 'statement',    label: 'Statement',     icon: '📋' },
-    { id: 'insights',     label: 'Insights',      icon: '🔍' },
+  const navItems = [
+    { id: 'dashboard',    label: 'Home',       icon: '🏠' },
+    { id: 'transactions', label: 'Activity',   icon: '💳' },
+    { id: 'friends',      label: 'Friends',    icon: '👥' },
+    { id: 'accounts',     label: 'Accounts',   icon: '🏦' },
+    { id: 'statement',    label: 'Statement',  icon: '📋' },
+    { id: 'insights',     label: 'Insights',   icon: '📊' },
   ];
 
   return (
     <div className="shell">
       {toastEl}
+
+      {/* Top bar */}
       <div className="topbar">
         <div className="topbar-brand">
           <div className="brand-icon">💸</div>
-          <div>
-            <div className="brand-name">FinTrack</div>
-          </div>
+          <div className="brand-name">FinTrack</div>
         </div>
         <div className="topbar-right">
           <div className="user-chip">
             <div className="user-avatar">{initials(user.name)}</div>
-            <span className="user-name">{user.name}</span>
+            <span className="user-name">{user.name.split(' ')[0]}</span>
           </div>
-          <button className="btn btn-ghost btn-sm" onClick={onLogout}>Sign Out</button>
+          <button className="btn btn-ghost btn-sm" onClick={onLogout} style={{ fontSize: 12, padding: '6px 12px' }}>Out</button>
         </div>
       </div>
 
+      {/* Main content */}
       <div className="main">
-        <div className="nav-tabs">
-          {tabs.map(t => (
-            <button key={t.id} className={`nav-tab ${tab === t.id ? 'active' : ''}`} onClick={() => setTab(t.id)}>
-              <span>{t.icon}</span>{t.label}
-            </button>
-          ))}
-        </div>
-
         {tab === 'dashboard'    && <Dashboard    user={user} friends={friends} accounts={accounts} transactions={transactions} setTab={setTab} />}
         {tab === 'transactions' && <Transactions user={user} friends={friends} accounts={accounts} transactions={transactions} showToast={showToast} />}
         {tab === 'friends'      && <Friends      user={user} friends={friends} transactions={transactions} showToast={showToast} />}
@@ -612,6 +656,28 @@ function AppShell({ user, onLogout }) {
         {tab === 'statement'    && <AccountStatement accounts={accounts} transactions={transactions} friends={friends} />}
         {tab === 'insights'     && <Insights     friends={friends} accounts={accounts} transactions={transactions} />}
       </div>
+
+      {/* FAB — quick add transaction */}
+      <button className="fab" onClick={() => setShowTxnForm(true)} title="Add transaction">＋</button>
+
+      {/* Bottom navigation */}
+      <nav className="bottom-nav">
+        {navItems.map(item => (
+          <button key={item.id} className={`bnav-item ${tab === item.id ? 'active' : ''}`} onClick={() => setTab(item.id)}>
+            <div className="bnav-icon">{item.icon}</div>
+            <span className="bnav-label">{item.label}</span>
+          </button>
+        ))}
+      </nav>
+
+      {/* Quick add modal (via FAB) */}
+      {showTxnForm && (
+        <TxnModal
+          userId={user.id} friends={friends} accounts={accounts} existing={null}
+          onClose={() => setShowTxnForm(false)}
+          onSaved={(msg) => { setShowTxnForm(false); showToast(msg); }}
+        />
+      )}
     </div>
   );
 }
@@ -625,176 +691,146 @@ function Dashboard({ user, friends, accounts, transactions, setTab }) {
   const totalReceived = transactions.filter(t => t.type === 'payment').reduce((s, t) => s + Number(t.amount), 0);
   const totalPending  = totalGiven - totalReceived;
 
-  // Per friend balance
-  const friendBalances = friends.map(f => {
-    const given    = transactions.filter(t => t.friendId === f.id && t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0);
-    const received = transactions.filter(t => t.friendId === f.id && t.type === 'payment').reduce((s, t) => s + Number(t.amount), 0);
-    return { ...f, given, received, balance: given - received };
-  }).sort((a, b) => b.balance - a.balance);
-
-  // Recent transactions (last 6)
-  const recent = [...transactions].sort((a, b) => b.date?.localeCompare(a.date)).slice(0, 6);
   const friendMap  = Object.fromEntries(friends.map(f => [f.id, f]));
   const accountMap = Object.fromEntries(accounts.map(a => [a.id, a]));
 
+  // Who owes me most
+  const topOwing = friends.map(f => ({
+    ...f,
+    balance: transactions.filter(t=>t.friendId===f.id&&t.type==='expense').reduce((s,t)=>s+Number(t.amount),0)
+           - transactions.filter(t=>t.friendId===f.id&&t.type==='payment').reduce((s,t)=>s+Number(t.amount),0)
+  })).filter(f => f.balance > 0).sort((a,b) => b.balance - a.balance);
+
+  // Recent 5 transactions
+  const recent = [...transactions].sort((a, b) => (b.date||'').localeCompare(a.date||'')).slice(0, 5);
+
   return (
     <div>
-      {/* Greeting */}
-      <div style={{ marginBottom: 24 }}>
-        <div style={{ fontFamily: 'var(--fh)', fontSize: 26, fontWeight: 800, color: 'var(--ink)' }}>
-          Hey, {user.name.split(' ')[0]} 👋
-        </div>
-        <div style={{ fontSize: 13, color: 'var(--ink3)', marginTop: 4 }}>Here's your money overview</div>
-      </div>
-
-      {/* Summary cards */}
-      <div className="cards-grid cols-4" style={{ marginBottom: 28 }}>
-        <div className="stat-card">
-          <div className="stat-icon" style={{ background: 'var(--redbg)' }}>💸</div>
-          <div className="stat-label">Given to Friends</div>
-          <div className="stat-value red">{fmt(totalGiven)}</div>
-          <div className="stat-sub">{transactions.filter(t => t.type === 'expense').length} expenses</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon" style={{ background: 'var(--amberbg)' }}>🧾</div>
-          <div className="stat-label">Personal Spend</div>
-          <div className="stat-value" style={{ color: 'var(--amber)' }}>{fmt(totalPersonal)}</div>
-          <div className="stat-sub">{transactions.filter(t => t.type === 'personal').length} transactions</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon" style={{ background: 'var(--greenbg)' }}>💰</div>
-          <div className="stat-label">Received Back</div>
-          <div className="stat-value green">{fmt(totalReceived)}</div>
-          <div className="stat-sub">{transactions.filter(t => t.type === 'payment').length} payments</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon" style={{ background: 'var(--indigobg)' }}>⏳</div>
-          <div className="stat-label">Friends Pending</div>
-          <div className={`stat-value ${totalPending > 0 ? 'red' : 'green'}`}>{fmt(totalPending)}</div>
-          <div className="stat-sub">{totalPending > 0 ? 'Others owe you' : 'All settled!'}</div>
+      {/* Hero balance card */}
+      <div className="hero-card">
+        <div className="hero-greeting">Good day,</div>
+        <div className="hero-name">{user.name.split(' ')[0]} 👋</div>
+        <div className="hero-pending-label">Friends owe you</div>
+        <div className="hero-pending-value">{fmt(totalPending > 0 ? totalPending : 0)}</div>
+        <div className="hero-row">
+          <div className="hero-mini">
+            <div className="hero-mini-label">💸 Given</div>
+            <div className="hero-mini-value">{fmt(totalGiven)}</div>
+          </div>
+          <div className="hero-mini">
+            <div className="hero-mini-label">💰 Received</div>
+            <div className="hero-mini-value">{fmt(totalReceived)}</div>
+          </div>
+          <div className="hero-mini">
+            <div className="hero-mini-label">🧾 Personal</div>
+            <div className="hero-mini-value">{fmt(totalPersonal)}</div>
+          </div>
         </div>
       </div>
 
-      {/* Account Credit/Balance Status */}
+      {/* Account status pills */}
       {accounts.some(a => a.limit || a.balance != null) && (
-        <div style={{ marginBottom: 28 }}>
-          <div style={{ fontFamily: 'var(--fh)', fontWeight: 700, fontSize: 16, color: 'var(--ink)', marginBottom: 14 }}>Account Status</div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
+        <div style={{ marginBottom: 18 }}>
+          <div className="sec-title">
+            Accounts
+            <button className="sec-more" onClick={() => setTab('accounts')}>View all</button>
+          </div>
+          <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none' }}>
             {accounts.map(a => {
-              const spent    = transactions.filter(t => t.accountId === a.id && t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0);
-              const received = transactions.filter(t => t.accountId === a.id && t.type === 'payment').reduce((s, t) => s + Number(t.amount), 0);
-              const net = spent - received;
-              if (a.type === 'credit_card' && a.limit) {
-                const avail = a.limit - net;
-                const pct   = Math.min(100, (net / a.limit) * 100);
-                const color = pct >= 90 ? 'var(--red)' : pct >= 70 ? 'var(--amber)' : 'var(--indigo)';
-                return (
-                  <div key={a.id} className="stat-card" style={{ padding: 16 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                      <span style={{ fontSize: 16 }}>💳</span>
-                      <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--ink2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.name}</span>
-                    </div>
-                    <div className="limit-bar-track" style={{ marginBottom: 8 }}>
-                      <div className="limit-bar-fill" style={{ width: `${pct}%`, background: color }} />
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
-                      <span style={{ color: 'var(--ink3)' }}>Used: {fmt(net)}</span>
-                      <span style={{ fontWeight: 700, color: avail < 0 ? 'var(--red)' : 'var(--green)' }}>Free: {fmt(Math.max(0, avail))}</span>
-                    </div>
-                    {pct >= 90 && <div style={{ fontSize: 11, color: 'var(--red)', marginTop: 5, fontWeight: 600 }}>⚠️ Almost at limit!</div>}
-                  </div>
-                );
-              }
-              if (a.type === 'bank_account' && a.balance != null) {
-                const rem = a.balance - net;
-                const pct = Math.min(100, (net / a.balance) * 100);
-                return (
-                  <div key={a.id} className="stat-card" style={{ padding: 16 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                      <span style={{ fontSize: 16 }}>🏦</span>
-                      <span style={{ fontWeight: 700, fontSize: 13, color: 'var(--ink2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.name}</span>
-                    </div>
-                    <div className="limit-bar-track" style={{ marginBottom: 8 }}>
-                      <div className="limit-bar-fill" style={{ width: `${pct}%`, background: 'var(--green)' }} />
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
-                      <span style={{ color: 'var(--ink3)' }}>Spent: {fmt(net)}</span>
-                      <span style={{ fontWeight: 700, color: rem < 0 ? 'var(--red)' : 'var(--green)' }}>Left: {fmt(Math.max(0, rem))}</span>
-                    </div>
-                  </div>
-                );
-              }
-              return null;
+              const spent = transactions.filter(t => t.accountId === a.id && t.type === 'expense').reduce((s,t)=>s+Number(t.amount),0);
+              const recv  = transactions.filter(t => t.accountId === a.id && t.type === 'payment').reduce((s,t)=>s+Number(t.amount),0);
+              const net   = spent - recv;
+              const isCC  = a.type === 'credit_card';
+              const limit = isCC ? a.limit : a.balance;
+              const pct   = limit ? Math.min(100, (net / limit) * 100) : 0;
+              const avail = limit ? limit - net : null;
+              const grad  = isCC
+                ? 'linear-gradient(135deg,#1a0a4f,#6c47ff)'
+                : 'linear-gradient(135deg,#064e3b,#0aaf6e)';
+              return (
+                <div key={a.id} style={{ background: grad, borderRadius: 16, padding: '14px 16px', minWidth: 170, flex: '0 0 auto', color: 'white', boxShadow: '0 4px 16px rgba(13,15,26,0.15)' }}>
+                  <div style={{ fontSize: 11, opacity: 0.7, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 2 }}>{isCC ? '💳' : '🏦'} {a.type === 'credit_card' ? 'Credit' : 'Savings'}</div>
+                  <div style={{ fontFamily: 'var(--fh)', fontSize: 14, fontWeight: 800, marginBottom: 10, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.name}</div>
+                  {limit ? (
+                    <>
+                      <div className="limit-bar-track" style={{ marginBottom: 6 }}>
+                        <div className="limit-bar-fill" style={{ width: `${pct}%` }} />
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11 }}>
+                        <span style={{ opacity: 0.7 }}>Used {Math.round(pct)}%</span>
+                        <span style={{ fontWeight: 700 }}>{fmt(Math.max(0, avail))} free</span>
+                      </div>
+                    </>
+                  ) : (
+                    <div style={{ fontFamily: 'var(--fh)', fontSize: 18, fontWeight: 800 }}>{fmt(net)} <span style={{ fontSize: 11, opacity: 0.7 }}>spent</span></div>
+                  )}
+                </div>
+              );
             })}
           </div>
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-        {/* Friend balances */}
-        <div className="table-card">
-          <div style={{ padding: '18px 18px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-            <div style={{ fontFamily: 'var(--fh)', fontWeight: 700, fontSize: 15 }}>Who Owes You</div>
-            <button className="btn btn-ghost btn-sm" onClick={() => setTab('friends')}>View all</button>
+      {/* Who owes you */}
+      {topOwing.length > 0 && (
+        <div style={{ marginBottom: 18 }}>
+          <div className="sec-title">
+            Who Owes You
+            <button className="sec-more" onClick={() => setTab('friends')}>View all</button>
           </div>
-          {friendBalances.length === 0 ? (
-            <div className="empty" style={{ padding: 32 }}><div className="empty-icon">👥</div><div className="empty-text">No friends yet</div></div>
-          ) : (
-            <div style={{ padding: '8px 0' }}>
-              {friendBalances.slice(0, 5).map(f => (
-                <div key={f.id} className="insight-row" style={{ padding: '11px 18px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div className="friend-avatar" style={{ width: 34, height: 34, fontSize: 13, background: f.color || colorFor(f.name) }}>{initials(f.name)}</div>
-                    <div>
-                      <div style={{ fontWeight: 600, fontSize: 14 }}>{f.name}</div>
-                      <div style={{ fontSize: 11, color: 'var(--ink3)' }}>Given {fmt(f.given)}</div>
-                    </div>
-                  </div>
-                  <div className={`bal-chip ${f.balance > 0 ? 'badge-red' : f.balance < 0 ? 'badge-green' : 'badge-gray'}`}>
-                    {f.balance > 0 ? `Owes ${fmt(f.balance)}` : f.balance < 0 ? `You owe ${fmt(Math.abs(f.balance))}` : 'Settled'}
+          <div className="activity-card">
+            {topOwing.slice(0, 4).map(f => (
+              <div key={f.id} className="activity-row">
+                <div className="activity-ico" style={{ background: f.color ? f.color + '22' : 'var(--purplebg)' }}>
+                  <div style={{ width: 32, height: 32, borderRadius: '50%', background: f.color || colorFor(f.name), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, color: 'white', fontFamily: 'var(--fh)' }}>
+                    {initials(f.name)}
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Recent transactions */}
-        <div className="table-card">
-          <div style={{ padding: '18px 18px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-            <div style={{ fontFamily: 'var(--fh)', fontWeight: 700, fontSize: 15 }}>Recent Activity</div>
-            <button className="btn btn-ghost btn-sm" onClick={() => setTab('transactions')}>View all</button>
+                <div className="activity-desc">
+                  <div className="activity-title">{f.name}</div>
+                  <div className="activity-sub">Pending repayment</div>
+                </div>
+                <div className="activity-amt" style={{ color: 'var(--red)' }}>{fmt(f.balance)}</div>
+              </div>
+            ))}
           </div>
-          {recent.length === 0 ? (
-            <div className="empty" style={{ padding: 32 }}><div className="empty-icon">💳</div><div className="empty-text">No transactions</div></div>
-          ) : (
-            <div style={{ padding: '8px 0' }}>
-              {recent.map(t => {
-                const f = friendMap[t.friendId];
-                const a = accountMap[t.accountId];
-                return (
-                  <div key={t.id} className="insight-row" style={{ padding: '11px 18px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <div style={{ width: 34, height: 34, borderRadius: 10, background: t.type === 'expense' ? 'var(--redbg)' : 'var(--greenbg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>
-                        {t.type === 'expense' ? '💸' : '💰'}
-                      </div>
-                      <div>
-                        <div style={{ fontWeight: 600, fontSize: 13 }}>{t.note || (t.type === 'expense' ? 'Expense' : 'Payment')}</div>
-                        <div style={{ fontSize: 11, color: 'var(--ink3)' }}>{f?.name || '—'} · {a?.name || '—'}</div>
-                      </div>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontWeight: 700, fontSize: 14, color: t.type === 'expense' ? 'var(--red)' : 'var(--green)' }}>
-                        {t.type === 'expense' ? '-' : '+'}{fmt(t.amount)}
-                      </div>
-                      <div style={{ fontSize: 11, color: 'var(--ink3)' }}>{fmtDate(t.date)}</div>
+        </div>
+      )}
+
+      {/* Recent activity */}
+      <div>
+        <div className="sec-title">
+          Recent Activity
+          <button className="sec-more" onClick={() => setTab('transactions')}>View all</button>
+        </div>
+        {recent.length === 0 ? (
+          <div className="activity-card"><div className="empty" style={{ padding: '32px 20px' }}><div className="empty-icon">💳</div><div className="empty-text">No transactions yet</div><div className="empty-sub">Tap + to add your first one</div></div></div>
+        ) : (
+          <div className="activity-card">
+            {recent.map(t => {
+              const f = friendMap[t.friendId];
+              const a = accountMap[t.accountId];
+              const isPersonal = t.type === 'personal';
+              const isPayment  = t.type === 'payment';
+              return (
+                <div key={t.id} className="activity-row">
+                  <div className="activity-ico" style={{ background: isPersonal ? 'var(--amberbg)' : isPayment ? 'var(--greenbg)' : 'var(--redbg)' }}>
+                    <span style={{ fontSize: 20 }}>{isPersonal ? '🧾' : isPayment ? '💰' : '💸'}</span>
+                  </div>
+                  <div className="activity-desc">
+                    <div className="activity-title">{t.note || (isPersonal ? 'Personal expense' : isPayment ? 'Payment received' : 'Expense')}</div>
+                    <div className="activity-sub">
+                      {isPersonal ? '🧾 Self' : f?.name || '—'} · {a?.name || '—'} · {fmtDate(t.date)}
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
+                  <div className="activity-amt" style={{ color: isPayment ? 'var(--green)' : isPersonal ? 'var(--amber)' : 'var(--red)' }}>
+                    {isPayment ? '+' : '-'}{fmt(t.amount)}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -983,8 +1019,10 @@ function TxnModal({ userId, friends, accounts, existing, onClose, onSaved }) {
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal">
-        <div className="modal-title">{existing ? 'Edit Transaction' : 'Add Transaction'}</div>
-        <div className="modal-sub">Record a spend for a friend or yourself</div>
+        <div className="modal-handle" />
+        <div className="modal-body">
+          <div className="modal-title">{existing ? 'Edit Transaction' : 'Add Transaction'}</div>
+          <div className="modal-sub">Record a spend for a friend or yourself</div>
         <form onSubmit={submit}>
 
           {/* Category — Friend or Personal */}
@@ -993,7 +1031,7 @@ function TxnModal({ userId, friends, accounts, existing, onClose, onSaved }) {
               <button key={cat} type="button" onClick={() => setCategory(cat)}
                 className="btn btn-sm"
                 style={{ flex: 1, fontSize: 12,
-                  background: form.category === cat ? 'var(--indigo)' : 'var(--bg2)',
+                  background: form.category === cat ? 'var(--purple)' : 'var(--bg2)',
                   color: form.category === cat ? 'white' : 'var(--ink3)',
                   border: '1.5px solid ' + (form.category === cat ? 'transparent' : 'var(--border)') }}>
                 {label}
@@ -1066,10 +1104,11 @@ function TxnModal({ userId, friends, accounts, existing, onClose, onSaved }) {
           )}
 
           <div className="modal-actions">
-            <button type="button" className="btn btn-ghost" onClick={onClose}>Cancel</button>
-            <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? 'Saving…' : existing ? 'Update' : 'Add'}</button>
+            <button type="button" className="btn btn-ghost" onClick={onClose} style={{ flex: 1 }}>Cancel</button>
+            <button type="submit" className="btn btn-primary" disabled={saving} style={{ flex: 2 }}>{saving ? 'Saving…' : existing ? 'Update' : 'Add Transaction'}</button>
           </div>
         </form>
+        </div>
       </div>
     </div>
   );
@@ -1250,7 +1289,7 @@ function Accounts({ user, accounts, transactions, friends, showToast }) {
   });
 
   // Bar color based on usage
-  const barColor = (pct) => pct >= 90 ? 'var(--red)' : pct >= 70 ? 'var(--amber)' : 'var(--indigo)';
+  const barColor = (pct) => pct >= 90 ? 'var(--red)' : pct >= 70 ? 'var(--amber)' : 'var(--purple)';
 
   return (
     <div>
@@ -1313,116 +1352,81 @@ function Accounts({ user, accounts, transactions, friends, showToast }) {
         <div className="table-card"><div className="empty"><div className="empty-icon">🏦</div><div className="empty-text">No accounts yet</div><div className="empty-sub">Add the card or account you use for friend expenses</div></div></div>
       ) : (
         <div className="account-grid">
-          {withStats.map(a => (
+          {withStats.map(a => {
+            const grad = a.type === 'credit_card'
+              ? `linear-gradient(135deg, ${a.color || '#1a0a4f'} 0%, #6c47ff 100%)`
+              : `linear-gradient(135deg, #064e3b 0%, ${a.color || '#0aaf6e'} 100%)`;
+            return (
             <div key={a.id}>
-              <div className="account-card">
-                {/* Header */}
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
-                  <div className="account-icon" style={{ background: a.type === 'credit_card' ? 'var(--indigobg)' : 'var(--greenbg)', marginBottom: 0 }}>
-                    {a.type === 'credit_card' ? '💳' : '🏦'}
+              <div className="account-card" style={{ background: grad }}>
+                <div className="account-card-inner">
+                  <div className="account-chip">
+                    {a.type === 'credit_card' ? '💳 Credit Card' : '🏦 Savings Account'}
                   </div>
-                  <span className="badge" style={{ background: a.type === 'credit_card' ? 'var(--indigobg)' : 'var(--greenbg)', color: a.type === 'credit_card' ? 'var(--indigo)' : 'var(--green)', border: `1px solid ${a.type === 'credit_card' ? 'var(--indigobrd)' : 'var(--greenbrd)'}` }}>
-                    {a.type === 'credit_card' ? 'Credit' : 'Savings'}
-                  </span>
+                  <div className="account-name">{a.name}</div>
+                  <div className="account-sub">{a.txnCount} transaction{a.txnCount !== 1 ? 's' : ''}</div>
+
+                  {/* Credit Card Limit Bar */}
+                  {a.type === 'credit_card' && a.limit ? (
+                    <div>
+                      <div className="limit-row">
+                        <span>Used: {fmt(a.netSpent)}</span>
+                        <span>{Math.round(a.usedPct)}% of limit</span>
+                      </div>
+                      <div className="limit-bar-track">
+                        <div className="limit-bar-fill" style={{ width: `${a.usedPct}%` }} />
+                      </div>
+                      <div className="limit-row" style={{ marginTop: 4 }}>
+                        <span>Limit: {fmt(a.limit)}</span>
+                        <span className="limit-available">{a.available < 0 ? '⚠️ Over limit' : `${fmt(Math.max(0, a.available))} free`}</span>
+                      </div>
+                    </div>
+                  ) : a.type === 'bank_account' && a.balance != null ? (
+                    <div>
+                      <div className="limit-row"><span>Spent: {fmt(a.netSpent)}</span><span>{Math.round(a.balPct)}% of balance</span></div>
+                      <div className="limit-bar-track"><div className="limit-bar-fill" style={{ width: `${a.balPct}%` }} /></div>
+                      <div className="limit-row" style={{ marginTop: 4 }}><span>Total: {fmt(a.balance)}</span><span className="limit-available">{fmt(Math.max(0, a.remaining))} left</span></div>
+                    </div>
+                  ) : (
+                    <div>
+                      <div className="account-spent">{fmt(a.totalSpent)}</div>
+                      <div className="account-spent-label">Total spent via this account</div>
+                    </div>
+                  )}
                 </div>
-
-                <div className="account-name">{a.name}</div>
-                <div style={{ fontSize: 12, color: 'var(--ink3)', marginBottom: 12 }}>{a.txnCount} transaction{a.txnCount !== 1 ? 's' : ''}</div>
-
-                {/* Credit Card Limit Bar */}
-                {a.type === 'credit_card' && a.limit && (
-                  <div style={{ marginBottom: 12, background: 'var(--bg)', borderRadius: 10, padding: '12px 14px' }}>
-                    <div className="limit-row">
-                      <span>Used</span>
-                      <span style={{ fontWeight: 700, color: barColor(a.usedPct) }}>{fmt(a.netSpent)}</span>
-                    </div>
-                    <div className="limit-bar-track">
-                      <div className="limit-bar-fill" style={{ width: `${a.usedPct}%`, background: barColor(a.usedPct) }} />
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11 }}>
-                      <span style={{ color: 'var(--ink3)' }}>Limit: {fmt(a.limit)}</span>
-                      <span className="limit-available" style={{ color: a.available < 0 ? 'var(--red)' : 'var(--green)' }}>
-                        Available: {fmt(Math.max(0, a.available))}
-                      </span>
-                    </div>
-                    {a.available < 0 && <div style={{ fontSize: 11, color: 'var(--red)', marginTop: 4, fontWeight: 600 }}>⚠️ Limit exceeded by {fmt(Math.abs(a.available))}</div>}
-                  </div>
-                )}
-
-                {/* Bank Account Balance Bar */}
-                {a.type === 'bank_account' && a.balance != null && (
-                  <div style={{ marginBottom: 12, background: 'var(--bg)', borderRadius: 10, padding: '12px 14px' }}>
-                    <div className="limit-row">
-                      <span>Spent on friends</span>
-                      <span style={{ fontWeight: 700, color: 'var(--red)' }}>{fmt(a.netSpent)}</span>
-                    </div>
-                    <div className="limit-bar-track">
-                      <div className="limit-bar-fill" style={{ width: `${a.balPct}%`, background: 'var(--green)' }} />
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11 }}>
-                      <span style={{ color: 'var(--ink3)' }}>Total: {fmt(a.balance)}</span>
-                      <span className="limit-available" style={{ color: a.remaining < 0 ? 'var(--red)' : 'var(--green)' }}>
-                        Remaining: {fmt(Math.max(0, a.remaining))}
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Simple spent if no limit/balance set */}
-                {((a.type === 'credit_card' && !a.limit) || (a.type === 'bank_account' && a.balance == null)) && (
-                  <div style={{ marginBottom: 12 }}>
-                    <div className="account-spent">{fmt(a.totalSpent)}</div>
-                    <div className="account-spent-label">Total spent via this account</div>
-                  </div>
-                )}
-
-                {/* Actions */}
                 <div className="account-actions">
-                  <button className="btn btn-ghost btn-sm" style={{ flex: 1 }}
-                    onClick={() => setExpandAcc(expandAcc === a.id ? null : a.id)}>
-                    👥 {expandAcc === a.id ? 'Hide' : 'Friends'}
+                  <button className="account-action-btn" onClick={() => setExpandAcc(expandAcc === a.id ? null : a.id)}>
+                    👥 {expandAcc === a.id ? 'Hide' : 'By Friend'}
                   </button>
-                  <button className="btn btn-ghost btn-sm btn-icon" onClick={() => openEdit(a)}><IcoEdit /></button>
-                  <button className="btn btn-danger btn-sm btn-icon" onClick={() => deleteAcc(a)}><IcoTrash /></button>
+                  <button className="account-action-btn" onClick={() => openEdit(a)}>✏️ Edit</button>
+                  <button className="account-action-btn" onClick={() => deleteAcc(a)}>🗑️ Delete</button>
                 </div>
               </div>
 
               {/* Friend × Account Breakdown Panel */}
               {expandAcc === a.id && (
-                <div className="table-card" style={{ marginTop: 8, borderRadius: 12 }}>
-                  <div style={{ padding: '14px 16px 8px', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: 14, color: 'var(--ink)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div className="breakdown-panel">
+                  <div style={{ padding: '14px 16px 8px', fontFamily: 'var(--fh)', fontWeight: 800, fontSize: 14, color: 'var(--ink)' }}>
                     👥 Who Used This Account
-                    <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--ink3)', fontFamily: 'var(--fb)' }}>— {a.name}</span>
                   </div>
                   {a.friendBreakdown.length === 0 ? (
-                    <div style={{ padding: '14px 16px 16px', fontSize: 13, color: 'var(--ink3)' }}>No transactions from this account yet.</div>
+                    <div style={{ padding: '14px 16px 16px', fontSize: 13, color: 'var(--ink3)' }}>No transactions yet.</div>
                   ) : (
                     <div style={{ overflowX: 'auto' }}>
                       <table className="breakdown-table">
-                        <thead>
-                          <tr>
-                            <th>Friend</th>
-                            <th>Borrowed</th>
-                            <th>Paid Back</th>
-                            <th>Balance</th>
-                          </tr>
-                        </thead>
+                        <thead><tr><th>Friend</th><th>Borrowed</th><th>Paid Back</th><th>Balance</th></tr></thead>
                         <tbody>
                           {a.friendBreakdown.map(f => (
                             <tr key={f.id}>
                               <td>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                                   <div className="friend-avatar" style={{ width: 28, height: 28, fontSize: 11, background: f.color || colorFor(f.name) }}>{initials(f.name)}</div>
-                                  <span style={{ fontWeight: 600 }}>{f.name}</span>
+                                  <span style={{ fontWeight: 700 }}>{f.name}</span>
                                 </div>
                               </td>
-                              <td style={{ color: 'var(--red)', fontWeight: 600 }}>{fmt(f.spent)}</td>
-                              <td style={{ color: 'var(--green)', fontWeight: 600 }}>{fmt(f.received)}</td>
-                              <td>
-                                <span className={`badge ${f.balance > 0 ? 'badge-red' : f.balance < 0 ? 'badge-green' : 'badge-gray'}`}>
-                                  {f.balance > 0 ? `Owes ${fmt(f.balance)}` : f.balance < 0 ? `You owe ${fmt(Math.abs(f.balance))}` : '✓ Settled'}
-                                </span>
-                              </td>
+                              <td style={{ color: 'var(--red)', fontWeight: 700 }}>{fmt(f.spent)}</td>
+                              <td style={{ color: 'var(--green)', fontWeight: 700 }}>{fmt(f.received)}</td>
+                              <td><span className={`badge ${f.balance > 0 ? 'badge-red' : f.balance < 0 ? 'badge-green' : 'badge-gray'}`}>{f.balance > 0 ? `Owes ${fmt(f.balance)}` : f.balance < 0 ? `You owe ${fmt(Math.abs(f.balance))}` : '✓ Settled'}</span></td>
                             </tr>
                           ))}
                         </tbody>
@@ -1432,7 +1436,7 @@ function Accounts({ user, accounts, transactions, friends, showToast }) {
                 </div>
               )}
             </div>
-          ))}
+          );})}
         </div>
       )}
     </div>
@@ -1511,7 +1515,7 @@ function AccountStatement({ accounts, transactions, friends }) {
       ) : (
         <>
           {/* Statement Header Card */}
-          <div className={`stmt-header ${isCC ? '' : 'bank'}`}>
+          <div className={`stmt-header ${isCC ? 'cc' : 'bank'}`}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 4 }}>
               <span style={{ fontSize: 28 }}>{isCC ? '💳' : '🏦'}</span>
               <div>
