@@ -327,8 +327,16 @@ tbody tr:hover { background: var(--bg); }
 }
 
 /* ── TXN TYPE CHIP ── */
-.txn-expense { background: var(--redbg); color: var(--red); border-radius: 6px; padding: 2px 8px; font-size: 11px; font-weight: 700; letter-spacing: 0.04em; }
-.txn-payment { background: var(--greenbg); color: var(--green); border-radius: 6px; padding: 2px 8px; font-size: 11px; font-weight: 700; letter-spacing: 0.04em; }
+.txn-expense  { background: var(--redbg);    color: var(--red);    border-radius: 6px; padding: 2px 8px; font-size: 11px; font-weight: 700; letter-spacing: 0.04em; }
+.txn-payment  { background: var(--greenbg);  color: var(--green);  border-radius: 6px; padding: 2px 8px; font-size: 11px; font-weight: 700; letter-spacing: 0.04em; }
+.txn-personal { background: var(--amberbg);  color: var(--amber);  border-radius: 6px; padding: 2px 8px; font-size: 11px; font-weight: 700; letter-spacing: 0.04em; }
+/* Account Statement */
+.stmt-header { background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%); border-radius: var(--radius); padding: 24px; color: white; margin-bottom: 20px; }
+.stmt-header.bank { background: linear-gradient(135deg, #059669 0%, #16a34a 100%); }
+.stmt-total-row { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 16px; }
+.stmt-total-box { background: rgba(255,255,255,0.15); border-radius: 10px; padding: 12px 16px; flex: 1; min-width: 110px; }
+.stmt-total-label { font-size: 11px; opacity: 0.8; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 4px; }
+.stmt-total-value { font-family: var(--fh); font-size: 20px; font-weight: 700; }
 
 /* ── INSIGHT ROW ── */
 .insight-row { display: flex; align-items: center; justify-content: space-between; padding: 13px 0; border-bottom: 1px solid var(--border); }
@@ -565,6 +573,7 @@ function AppShell({ user, onLogout }) {
     { id: 'transactions', label: 'Transactions',  icon: '💳' },
     { id: 'friends',      label: 'Friends',       icon: '👥' },
     { id: 'accounts',     label: 'Accounts',      icon: '🏦' },
+    { id: 'statement',    label: 'Statement',     icon: '📋' },
     { id: 'insights',     label: 'Insights',      icon: '🔍' },
   ];
 
@@ -600,6 +609,7 @@ function AppShell({ user, onLogout }) {
         {tab === 'transactions' && <Transactions user={user} friends={friends} accounts={accounts} transactions={transactions} showToast={showToast} />}
         {tab === 'friends'      && <Friends      user={user} friends={friends} transactions={transactions} showToast={showToast} />}
         {tab === 'accounts'     && <Accounts     user={user} accounts={accounts} transactions={transactions} friends={friends} showToast={showToast} />}
+        {tab === 'statement'    && <AccountStatement accounts={accounts} transactions={transactions} friends={friends} />}
         {tab === 'insights'     && <Insights     friends={friends} accounts={accounts} transactions={transactions} />}
       </div>
     </div>
@@ -611,6 +621,7 @@ function AppShell({ user, onLogout }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 function Dashboard({ user, friends, accounts, transactions, setTab }) {
   const totalGiven    = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0);
+  const totalPersonal = transactions.filter(t => t.type === 'personal').reduce((s, t) => s + Number(t.amount), 0);
   const totalReceived = transactions.filter(t => t.type === 'payment').reduce((s, t) => s + Number(t.amount), 0);
   const totalPending  = totalGiven - totalReceived;
 
@@ -640,27 +651,27 @@ function Dashboard({ user, friends, accounts, transactions, setTab }) {
       <div className="cards-grid cols-4" style={{ marginBottom: 28 }}>
         <div className="stat-card">
           <div className="stat-icon" style={{ background: 'var(--redbg)' }}>💸</div>
-          <div className="stat-label">Total Given</div>
+          <div className="stat-label">Given to Friends</div>
           <div className="stat-value red">{fmt(totalGiven)}</div>
           <div className="stat-sub">{transactions.filter(t => t.type === 'expense').length} expenses</div>
         </div>
         <div className="stat-card">
+          <div className="stat-icon" style={{ background: 'var(--amberbg)' }}>🧾</div>
+          <div className="stat-label">Personal Spend</div>
+          <div className="stat-value" style={{ color: 'var(--amber)' }}>{fmt(totalPersonal)}</div>
+          <div className="stat-sub">{transactions.filter(t => t.type === 'personal').length} transactions</div>
+        </div>
+        <div className="stat-card">
           <div className="stat-icon" style={{ background: 'var(--greenbg)' }}>💰</div>
-          <div className="stat-label">Total Received</div>
+          <div className="stat-label">Received Back</div>
           <div className="stat-value green">{fmt(totalReceived)}</div>
           <div className="stat-sub">{transactions.filter(t => t.type === 'payment').length} payments</div>
         </div>
         <div className="stat-card">
-          <div className="stat-icon" style={{ background: 'var(--amberbg)' }}>⏳</div>
-          <div className="stat-label">Pending</div>
+          <div className="stat-icon" style={{ background: 'var(--indigobg)' }}>⏳</div>
+          <div className="stat-label">Friends Pending</div>
           <div className={`stat-value ${totalPending > 0 ? 'red' : 'green'}`}>{fmt(totalPending)}</div>
           <div className="stat-sub">{totalPending > 0 ? 'Others owe you' : 'All settled!'}</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon" style={{ background: 'var(--indigobg)' }}>👥</div>
-          <div className="stat-label">Active Friends</div>
-          <div className="stat-value indigo">{friends.length}</div>
-          <div className="stat-sub">{accounts.length} account{accounts.length !== 1 ? 's' : ''} linked</div>
         </div>
       </div>
 
@@ -836,8 +847,9 @@ function Transactions({ user, friends, accounts, transactions, showToast }) {
       <div className="filter-bar">
         <select className="filter-select" value={filterType} onChange={e => setFT(e.target.value)}>
           <option value="all">All Types</option>
-          <option value="expense">Expenses</option>
-          <option value="payment">Payments</option>
+          <option value="expense">Friend Expenses</option>
+          <option value="payment">Payments Received</option>
+          <option value="personal">Personal Expenses</option>
         </select>
         <select className="filter-select" value={filterFriend} onChange={e => setFF(e.target.value)}>
           <option value="all">All Friends</option>
@@ -868,12 +880,20 @@ function Transactions({ user, friends, accounts, transactions, showToast }) {
                   return (
                     <tr key={t.id}>
                       <td className="td-muted">{fmtDate(t.date)}</td>
-                      <td>{t.type === 'expense' ? <span className="txn-expense">Expense</span> : <span className="txn-payment">Payment</span>}</td>
                       <td>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          {f && <div className="friend-avatar" style={{ width: 28, height: 28, fontSize: 11, background: f.color || colorFor(f.name) }}>{initials(f.name)}</div>}
-                          <span className="td-bold">{f?.name || '—'}</span>
-                        </div>
+                        {t.type === 'personal' ? <span className="txn-personal">Personal</span>
+                         : t.type === 'expense' ? <span className="txn-expense">Friend Exp</span>
+                         : <span className="txn-payment">Payment In</span>}
+                      </td>
+                      <td>
+                        {t.type === 'personal' ? (
+                          <span style={{ fontSize: 13, color: 'var(--amber)', fontWeight: 600 }}>🧾 Self</span>
+                        ) : (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            {f && <div className="friend-avatar" style={{ width: 28, height: 28, fontSize: 11, background: f.color || colorFor(f.name) }}>{initials(f.name)}</div>}
+                            <span className="td-bold">{f?.name || '—'}</span>
+                          </div>
+                        )}
                       </td>
                       <td>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -916,6 +936,7 @@ function Transactions({ user, friends, accounts, transactions, showToast }) {
 function TxnModal({ userId, friends, accounts, existing, onClose, onSaved }) {
   const [form, setForm] = useState({
     type:      existing?.type      || 'expense',
+    category:  existing?.category  || 'friend',   // 'friend' | 'personal'
     friendId:  existing?.friendId  || '',
     accountId: existing?.accountId || '',
     amount:    existing?.amount    ? String(existing.amount) : '',
@@ -925,46 +946,88 @@ function TxnModal({ userId, friends, accounts, existing, onClose, onSaved }) {
   const [saving, setSaving] = useState(false);
   const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
 
+  // When switching to personal, clear friendId; when payment always needs friend
+  const setCategory = (cat) => setForm(f => ({
+    ...f, category: cat,
+    type: cat === 'personal' ? 'personal' : f.type === 'personal' ? 'expense' : f.type,
+    friendId: cat === 'personal' ? '' : f.friendId,
+  }));
+
   const submit = async (e) => {
     e.preventDefault();
-    if (!form.friendId || !form.accountId || !form.amount || !form.date) { alert('Fill all required fields'); return; }
+    const isPersonal = form.category === 'personal';
+    if (!form.accountId || !form.amount || !form.date) { alert('Fill all required fields'); return; }
+    if (!isPersonal && form.type !== 'personal' && !form.friendId) { alert('Select a friend'); return; }
     const amt = parseFloat(form.amount);
     if (isNaN(amt) || amt <= 0) { alert('Enter a valid amount'); return; }
     setSaving(true);
     try {
-      const data = { userId, ...form, amount: amt };
+      const data = {
+        userId,
+        type:      isPersonal ? 'personal' : form.type,
+        category:  isPersonal ? 'personal' : 'friend',
+        friendId:  isPersonal ? null : form.friendId,
+        accountId: form.accountId,
+        amount:    amt,
+        date:      form.date,
+        note:      form.note,
+      };
       if (existing) { await updateDoc(doc(db, 'transactions', existing.id), data); onSaved('Transaction updated ✓'); }
-      else           { await addDoc(collection(db, 'transactions'), data);          onSaved('Transaction added ✓'); }
+      else          { await addDoc(collection(db, 'transactions'), data);           onSaved('Transaction added ✓'); }
     } catch (err) { alert('Save failed'); console.error(err); }
     finally { setSaving(false); }
   };
+
+  const isPersonal = form.category === 'personal';
 
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal">
         <div className="modal-title">{existing ? 'Edit Transaction' : 'Add Transaction'}</div>
-        <div className="modal-sub">Record an expense or a payment received</div>
+        <div className="modal-sub">Record a spend for a friend or yourself</div>
         <form onSubmit={submit}>
-          {/* Type toggle */}
-          <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-            {['expense','payment'].map(tp => (
-              <button key={tp} type="button"
-                onClick={() => setForm(f => ({ ...f, type: tp }))}
+
+          {/* Category — Friend or Personal */}
+          <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+            {[['friend','👥 For a Friend'],['personal','🧾 Personal Expense']].map(([cat, label]) => (
+              <button key={cat} type="button" onClick={() => setCategory(cat)}
                 className="btn btn-sm"
-                style={{ flex: 1, background: form.type === tp ? (tp === 'expense' ? 'var(--red)' : 'var(--green)') : 'var(--bg2)', color: form.type === tp ? 'white' : 'var(--ink3)', border: '1.5px solid ' + (form.type === tp ? 'transparent' : 'var(--border)') }}>
-                {tp === 'expense' ? '💸 Expense' : '💰 Payment Received'}
+                style={{ flex: 1, fontSize: 12,
+                  background: form.category === cat ? 'var(--indigo)' : 'var(--bg2)',
+                  color: form.category === cat ? 'white' : 'var(--ink3)',
+                  border: '1.5px solid ' + (form.category === cat ? 'transparent' : 'var(--border)') }}>
+                {label}
               </button>
             ))}
           </div>
 
-          <div className="form-row g2">
-            <div className="field">
-              <label className="field-label">Friend *</label>
-              <select className="field-input" value={form.friendId} onChange={set('friendId')}>
-                <option value="">Select friend…</option>
-                {friends.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
-              </select>
+          {/* Type toggle — only for friend transactions */}
+          {!isPersonal && (
+            <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+              {['expense','payment'].map(tp => (
+                <button key={tp} type="button" onClick={() => setForm(f => ({ ...f, type: tp }))}
+                  className="btn btn-sm"
+                  style={{ flex: 1,
+                    background: form.type === tp ? (tp === 'expense' ? 'var(--red)' : 'var(--green)') : 'var(--bg2)',
+                    color: form.type === tp ? 'white' : 'var(--ink3)',
+                    border: '1.5px solid ' + (form.type === tp ? 'transparent' : 'var(--border)') }}>
+                  {tp === 'expense' ? '💸 I Paid For Them' : '💰 They Paid Me Back'}
+                </button>
+              ))}
             </div>
+          )}
+
+          <div className="form-row g2">
+            {/* Friend selector — only for friend transactions */}
+            {!isPersonal && (
+              <div className="field">
+                <label className="field-label">Friend *</label>
+                <select className="field-input" value={form.friendId} onChange={set('friendId')}>
+                  <option value="">Select friend…</option>
+                  {friends.map(f => <option key={f.id} value={f.id}>{f.name}</option>)}
+                </select>
+              </div>
+            )}
             <div className="field">
               <label className="field-label">Account *</label>
               <select className="field-input" value={form.accountId} onChange={set('accountId')}>
@@ -973,6 +1036,7 @@ function TxnModal({ userId, friends, accounts, existing, onClose, onSaved }) {
               </select>
             </div>
           </div>
+
           <div className="form-row g2">
             <div className="field">
               <label className="field-label">Amount (₹) *</label>
@@ -983,15 +1047,27 @@ function TxnModal({ userId, friends, accounts, existing, onClose, onSaved }) {
               <input className="field-input" type="date" value={form.date} onChange={set('date')} />
             </div>
           </div>
-          <div className="form-row" style={{ marginBottom: 0 }}>
-            <div className="field">
-              <label className="field-label">Note (optional)</label>
-              <input className="field-input" placeholder="e.g. Dinner at restaurant" value={form.note} onChange={set('note')} />
+
+          {isPersonal && (
+            <div className="form-row" style={{ marginBottom: 0 }}>
+              <div className="field">
+                <label className="field-label">Category / Note</label>
+                <input className="field-input" placeholder="e.g. Groceries, Netflix, Petrol…" value={form.note} onChange={set('note')} />
+              </div>
             </div>
-          </div>
+          )}
+          {!isPersonal && (
+            <div className="form-row" style={{ marginBottom: 0 }}>
+              <div className="field">
+                <label className="field-label">Note (optional)</label>
+                <input className="field-input" placeholder="e.g. Dinner at restaurant" value={form.note} onChange={set('note')} />
+              </div>
+            </div>
+          )}
+
           <div className="modal-actions">
             <button type="button" className="btn btn-ghost" onClick={onClose}>Cancel</button>
-            <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? 'Saving…' : existing ? 'Update' : 'Add Transaction'}</button>
+            <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? 'Saving…' : existing ? 'Update' : 'Add'}</button>
           </div>
         </form>
       </div>
@@ -1358,6 +1434,211 @@ function Accounts({ user, accounts, transactions, friends, showToast }) {
             </div>
           ))}
         </div>
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ─── ACCOUNT STATEMENT ────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+function AccountStatement({ accounts, transactions, friends }) {
+  const [selAcc,   setSelAcc]   = useState(accounts[0]?.id || '');
+  const [fromDate, setFromDate] = useState('');
+  const [toDate,   setToDate]   = useState('');
+
+  const friendMap = Object.fromEntries(friends.map(f => [f.id, f]));
+  const account   = accounts.find(a => a.id === selAcc);
+
+  // Filter transactions for selected account + date range
+  let stmtTxns = transactions.filter(t => t.accountId === selAcc);
+  if (fromDate) stmtTxns = stmtTxns.filter(t => t.date >= fromDate);
+  if (toDate)   stmtTxns = stmtTxns.filter(t => t.date <= toDate);
+  stmtTxns = stmtTxns.sort((a, b) => b.date.localeCompare(a.date));
+
+  // Summary totals for the period
+  const totalFriendExpense = stmtTxns.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0);
+  const totalPersonal      = stmtTxns.filter(t => t.type === 'personal').reduce((s, t) => s + Number(t.amount), 0);
+  const totalReceived      = stmtTxns.filter(t => t.type === 'payment').reduce((s, t) => s + Number(t.amount), 0);
+  const totalDebited       = totalFriendExpense + totalPersonal;
+  const netFlow            = totalReceived - totalDebited;
+
+  // Per-friend breakdown for this period
+  const friendBreakdown = friends.map(f => {
+    const spent    = stmtTxns.filter(t => t.friendId === f.id && t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0);
+    const received = stmtTxns.filter(t => t.friendId === f.id && t.type === 'payment').reduce((s, t) => s + Number(t.amount), 0);
+    return { ...f, spent, received, balance: spent - received };
+  }).filter(f => f.spent > 0 || f.received > 0);
+
+  const isCC = account?.type === 'credit_card';
+
+  return (
+    <div>
+      <div className="page-head">
+        <div><div className="page-title">Account Statement</div>
+          <div className="page-sub">Full breakdown of any card or account for any period</div>
+        </div>
+      </div>
+
+      {/* Controls */}
+      <div className="form-section" style={{ marginBottom: 22 }}>
+        <div className="form-row g2" style={{ marginBottom: 0 }}>
+          <div className="field">
+            <label className="field-label">Select Account *</label>
+            <select className="field-input" value={selAcc} onChange={e => setSelAcc(e.target.value)}>
+              {accounts.map(a => <option key={a.id} value={a.id}>{a.type === 'credit_card' ? '💳' : '🏦'} {a.name}</option>)}
+            </select>
+          </div>
+          <div className="field">
+            <label className="field-label">From Date</label>
+            <input className="field-input" type="date" value={fromDate} onChange={e => setFromDate(e.target.value)} />
+          </div>
+          <div className="field">
+            <label className="field-label">To Date</label>
+            <input className="field-input" type="date" value={toDate} onChange={e => setToDate(e.target.value)} />
+          </div>
+        </div>
+        {(fromDate || toDate) && (
+          <button className="filter-clear" style={{ marginTop: 10 }}
+            onClick={() => { setFromDate(''); setToDate(''); }}>
+            Clear date filter
+          </button>
+        )}
+      </div>
+
+      {!account ? (
+        <div className="table-card"><div className="empty"><div className="empty-icon">🏦</div><div className="empty-text">No accounts yet</div></div></div>
+      ) : (
+        <>
+          {/* Statement Header Card */}
+          <div className={`stmt-header ${isCC ? '' : 'bank'}`}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 4 }}>
+              <span style={{ fontSize: 28 }}>{isCC ? '💳' : '🏦'}</span>
+              <div>
+                <div style={{ fontFamily: 'var(--fh)', fontSize: 22, fontWeight: 800 }}>{account.name}</div>
+                <div style={{ fontSize: 12, opacity: 0.75, marginTop: 2 }}>
+                  {fromDate || toDate
+                    ? `${fromDate ? fmtDate(fromDate) : 'Beginning'} → ${toDate ? fmtDate(toDate) : 'Today'}`
+                    : 'All time'} · {stmtTxns.length} transaction{stmtTxns.length !== 1 ? 's' : ''}
+                </div>
+              </div>
+            </div>
+            {account.limit && isCC && (
+              <div style={{ marginTop: 10, marginBottom: 6 }}>
+                <div className="limit-bar-track" style={{ background: 'rgba(255,255,255,0.2)', marginBottom: 6 }}>
+                  <div className="limit-bar-fill" style={{
+                    width: `${Math.min(100, (totalDebited / account.limit) * 100)}%`,
+                    background: 'white'
+                  }} />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, opacity: 0.85 }}>
+                  <span>Limit: {fmt(account.limit)}</span>
+                  <span>Available: {fmt(Math.max(0, account.limit - totalDebited))}</span>
+                </div>
+              </div>
+            )}
+            <div className="stmt-total-row">
+              <div className="stmt-total-box">
+                <div className="stmt-total-label">Friend Expenses</div>
+                <div className="stmt-total-value">{fmt(totalFriendExpense)}</div>
+              </div>
+              <div className="stmt-total-box">
+                <div className="stmt-total-label">Personal Spend</div>
+                <div className="stmt-total-value">{fmt(totalPersonal)}</div>
+              </div>
+              <div className="stmt-total-box">
+                <div className="stmt-total-label">Received Back</div>
+                <div className="stmt-total-value">{fmt(totalReceived)}</div>
+              </div>
+              <div className="stmt-total-box" style={{ background: 'rgba(255,255,255,0.25)' }}>
+                <div className="stmt-total-label">Net Outflow</div>
+                <div className="stmt-total-value">{fmt(totalDebited - totalReceived)}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Friend Breakdown for this period */}
+          {friendBreakdown.length > 0 && (
+            <div className="table-card" style={{ marginBottom: 20 }}>
+              <div style={{ padding: '16px 18px 8px', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: 15 }}>
+                Friend Breakdown — This Period
+              </div>
+              <div style={{ overflowX: 'auto' }}>
+                <table className="breakdown-table">
+                  <thead>
+                    <tr><th>Friend</th><th>Borrowed via this account</th><th>Paid Back</th><th>Outstanding</th></tr>
+                  </thead>
+                  <tbody>
+                    {friendBreakdown.map(f => (
+                      <tr key={f.id}>
+                        <td>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <div className="friend-avatar" style={{ width: 30, height: 30, fontSize: 12, background: f.color || colorFor(f.name) }}>{initials(f.name)}</div>
+                            <span style={{ fontWeight: 600 }}>{f.name}</span>
+                          </div>
+                        </td>
+                        <td style={{ color: 'var(--red)', fontWeight: 600 }}>{fmt(f.spent)}</td>
+                        <td style={{ color: 'var(--green)', fontWeight: 600 }}>{fmt(f.received)}</td>
+                        <td>
+                          <span className={`badge ${f.balance > 0 ? 'badge-red' : f.balance < 0 ? 'badge-green' : 'badge-gray'}`}>
+                            {f.balance > 0 ? `Owes ${fmt(f.balance)}` : f.balance < 0 ? `You owe ${fmt(Math.abs(f.balance))}` : '✓ Settled'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Full Transaction List */}
+          {stmtTxns.length === 0 ? (
+            <div className="table-card"><div className="empty"><div className="empty-icon">📋</div><div className="empty-text">No transactions in this period</div><div className="empty-sub">Try adjusting the date range</div></div></div>
+          ) : (
+            <div className="table-card">
+              <div style={{ padding: '16px 18px 8px', fontFamily: 'var(--fh)', fontWeight: 700, fontSize: 15 }}>
+                All Transactions
+              </div>
+              <div className="table-wrap">
+                <table>
+                  <thead>
+                    <tr><th>Date</th><th>Type</th><th>Who</th><th>Amount</th><th>Note</th></tr>
+                  </thead>
+                  <tbody>
+                    {stmtTxns.map(t => {
+                      const f = friendMap[t.friendId];
+                      return (
+                        <tr key={t.id}>
+                          <td className="td-muted">{fmtDate(t.date)}</td>
+                          <td>
+                            {t.type === 'personal' ? <span className="txn-personal">Personal</span>
+                             : t.type === 'expense'  ? <span className="txn-expense">Friend Exp</span>
+                             : <span className="txn-payment">Payment In</span>}
+                          </td>
+                          <td>
+                            {t.type === 'personal' ? (
+                              <span style={{ color: 'var(--amber)', fontWeight: 600, fontSize: 13 }}>🧾 Self</span>
+                            ) : (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                                {f && <div className="friend-avatar" style={{ width: 26, height: 26, fontSize: 10, background: f?.color || colorFor(f?.name || '') }}>{initials(f?.name)}</div>}
+                                <span className="td-bold">{f?.name || '—'}</span>
+                              </div>
+                            )}
+                          </td>
+                          <td style={{ fontWeight: 700, color: t.type === 'payment' ? 'var(--green)' : t.type === 'personal' ? 'var(--amber)' : 'var(--red)' }}>
+                            {t.type === 'payment' ? '+' : '-'}{fmt(t.amount)}
+                          </td>
+                          <td className="td-muted" style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.note || '—'}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
