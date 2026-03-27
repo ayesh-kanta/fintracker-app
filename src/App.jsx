@@ -71,6 +71,12 @@ const CSS = `
   --g-brand: linear-gradient(135deg, #0a7268 0%, #14a898 100%);
   --g-hero:  linear-gradient(140deg, #041a17 0%, #0a7268 60%, #14a898 100%);
 
+  /* Settlement — Indigo */
+  --ind:     #4f46e5;
+  --indbg:   #eef2ff;
+  --indbrd:  #c7d2fe;
+  --ind-dark:#3730a3;
+
   --fh: 'Nunito', system-ui, sans-serif;
   --fb: 'Figtree', system-ui, sans-serif;
 }
@@ -489,6 +495,53 @@ tbody tr:hover td { background: var(--bg); }
 .txn-expense  { background: var(--redbg);   color: var(--red);   border: 1px solid var(--redbrd);   border-radius: 6px; padding: 2px 9px; font-size: 10px; font-weight: 700; }
 .txn-payment  { background: var(--greenbg); color: var(--green); border: 1px solid var(--greenbrd); border-radius: 6px; padding: 2px 9px; font-size: 10px; font-weight: 700; }
 .txn-personal { background: var(--amberbg); color: var(--amber); border: 1px solid var(--amberbrd); border-radius: 6px; padding: 2px 9px; font-size: 10px; font-weight: 700; }
+.txn-settle   { background: var(--indbg);   color: var(--ind);   border: 1px solid var(--indbrd);   border-radius: 6px; padding: 2px 9px; font-size: 10px; font-weight: 700; }
+.badge-indigo { background: var(--indbg); color: var(--ind); border: 1px solid var(--indbrd); }
+
+/* ─── SETTLEMENT PAGE ─── */
+.settle-hero {
+  background: linear-gradient(135deg, #1e1b4b 0%, #4f46e5 100%);
+  border-radius: 20px; padding: 26px 32px; margin-bottom: 28px;
+  position: relative; overflow: hidden; box-shadow: 0 6px 24px rgba(79,70,229,0.35);
+  display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 24px;
+}
+.settle-hero::before { content:''; position:absolute; width:280px; height:280px; border-radius:50%; top:-100px; right:-80px; background:rgba(255,255,255,0.05); pointer-events:none; }
+.settle-hero-title { font-family: var(--fh); font-size: 24px; font-weight: 900; color: white; margin-bottom: 4px; }
+.settle-hero-sub   { font-size: 13px; color: rgba(255,255,255,0.55); font-weight: 500; }
+.settle-stats { display: flex; gap: 14px; flex-shrink: 0; flex-wrap: wrap; }
+.settle-stat {
+  background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 14px; padding: 14px 20px; min-width: 120px;
+  backdrop-filter: blur(4px);
+}
+.settle-stat-lbl { font-size: 10px; color: rgba(255,255,255,0.5); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 5px; }
+.settle-stat-val { font-family: var(--fh); font-size: 20px; font-weight: 900; color: white; }
+
+/* flow arrow pill */
+.flow-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--indbg); border: 1px solid var(--indbrd);
+  border-radius: 20px; padding: 4px 12px; font-size: 12px; font-weight: 700; color: var(--ind);
+  white-space: nowrap;
+}
+.flow-arrow { color: var(--ind); font-size: 14px; }
+
+/* settlement modal wider */
+.modal-settle { max-width: 600px; }
+
+/* method type toggle */
+.method-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; margin-bottom: 16px; }
+.method-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 14px 10px; border-radius: 12px; cursor: pointer;
+  background: var(--bg2); border: 2px solid var(--border);
+  transition: all 0.15s; font-family: var(--fb);
+}
+.method-btn:hover { background: var(--indbg); border-color: var(--indbrd); }
+.method-btn.active { background: var(--indbg); border-color: var(--ind); }
+.method-btn-ico  { font-size: 22px; }
+.method-btn-lbl  { font-size: 12px; font-weight: 700; color: var(--ink2); text-align: center; }
+.method-btn.active .method-btn-lbl { color: var(--ind); }
 
 /* ─── FILTER BAR ─── */
 .filter-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
@@ -822,7 +875,9 @@ function AppShell({ user, onLogout }) {
   const [friends,setFriends]   = useState([]);
   const [accounts,setAccounts] = useState([]);
   const [transactions,setTxns] = useState([]);
+  const [settlements,setSettlements] = useState([]);
   const [showTxnForm,setTxnForm] = useState(false);
+  const [showSettleForm,setSettleForm] = useState(false);
   const [mobOpen,setMobOpen]   = useState(false);
   const [showToast,toastEl]    = useToast();
 
@@ -830,26 +885,29 @@ function AppShell({ user, onLogout }) {
     const qF=query(collection(db,'friends'),where('userId','==',user.id));
     const qA=query(collection(db,'accounts'),where('userId','==',user.id));
     const qT=query(collection(db,'transactions'),where('userId','==',user.id));
+    const qS=query(collection(db,'settlements'),where('userId','==',user.id));
     const u1=onSnapshot(qF,s=>setFriends(s.docs.map(d=>({id:d.id,...d.data()}))));
     const u2=onSnapshot(qA,s=>setAccounts(s.docs.map(d=>({id:d.id,...d.data()}))));
     const u3=onSnapshot(qT,s=>setTxns(s.docs.map(d=>({id:d.id,...d.data()}))));
-    return()=>{u1();u2();u3();};
+    const u4=onSnapshot(qS,s=>setSettlements(s.docs.map(d=>({id:d.id,...d.data()}))));
+    return()=>{u1();u2();u3();u4();};
   },[user.id]);
 
   const pending = transactions.filter(t=>t.type==='expense').reduce((s,t)=>s+Number(t.amount),0)
                 - transactions.filter(t=>t.type==='payment').reduce((s,t)=>s+Number(t.amount),0);
 
   const navItems = [
-    {id:'dashboard',  label:'Dashboard',  icon:'🏠'},
+    {id:'dashboard',   label:'Dashboard',   icon:'🏠'},
     {id:'transactions',label:'Transactions',icon:'💳'},
-    {id:'friends',    label:'Friends',    icon:'👥', badge: friends.filter(f=>{
+    {id:'friends',     label:'Friends',     icon:'👥', badge: friends.filter(f=>{
       const bal=transactions.filter(t=>t.friendId===f.id&&t.type==='expense').reduce((s,t)=>s+Number(t.amount),0)
               - transactions.filter(t=>t.friendId===f.id&&t.type==='payment').reduce((s,t)=>s+Number(t.amount),0);
       return bal>0;
     }).length||null},
-    {id:'accounts',   label:'Accounts',   icon:'🏦'},
-    {id:'statement',  label:'Statement',  icon:'📋'},
-    {id:'insights',   label:'Insights',   icon:'📊'},
+    {id:'accounts',    label:'Accounts',    icon:'🏦'},
+    {id:'settlements', label:'Settlements', icon:'🔄'},
+    {id:'statement',   label:'Statement',   icon:'📋'},
+    {id:'insights',    label:'Insights',    icon:'📊'},
   ];
 
   const navigate = (id) => { setTab(id); setMobOpen(false); };
@@ -883,6 +941,10 @@ function AppShell({ user, onLogout }) {
             <div className="sid-ico-wrap" style={{background:'var(--t)'}}>➕</div>
             <span className="sid-label">Add Transaction</span>
           </button>
+          <button className="sid-item" onClick={()=>setSettleForm(true)}>
+            <div className="sid-ico-wrap" style={{background:'var(--ind)'}}>🔄</div>
+            <span className="sid-label">Record Settlement</span>
+          </button>
         </nav>
 
         <div className="sid-user">
@@ -909,10 +971,11 @@ function AppShell({ user, onLogout }) {
       {/* Main content */}
       <div className="app-body">
         <div className="page-content">
-          {tab==='dashboard'    && <Dashboard    user={user} friends={friends} accounts={accounts} transactions={transactions} setTab={setTab}/>}
+          {tab==='dashboard'    && <Dashboard    user={user} friends={friends} accounts={accounts} transactions={transactions} settlements={settlements} setTab={setTab}/>}
           {tab==='transactions' && <Transactions user={user} friends={friends} accounts={accounts} transactions={transactions} showToast={showToast}/>}
           {tab==='friends'      && <Friends      user={user} friends={friends} accounts={accounts} transactions={transactions} showToast={showToast}/>}
           {tab==='accounts'     && <Accounts     user={user} accounts={accounts} transactions={transactions} friends={friends} showToast={showToast}/>}
+          {tab==='settlements'  && <SettlementsPage user={user} accounts={accounts} settlements={settlements} showToast={showToast} onNew={()=>setSettleForm(true)}/>}
           {tab==='statement'    && <AccountStatement accounts={accounts} transactions={transactions} friends={friends}/>}
           {tab==='insights'     && <Insights     friends={friends} accounts={accounts} transactions={transactions}/>}
         </div>
@@ -923,6 +986,11 @@ function AppShell({ user, onLogout }) {
           onClose={()=>setTxnForm(false)}
           onSaved={msg=>{setTxnForm(false);showToast(msg);}}/>
       )}
+      {showSettleForm && (
+        <SettlementModal userId={user.id} accounts={accounts}
+          onClose={()=>setSettleForm(false)}
+          onSaved={msg=>{setSettleForm(false);showToast(msg);}}/>
+      )}
     </div>
   );
 }
@@ -930,7 +998,7 @@ function AppShell({ user, onLogout }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // ─── DASHBOARD ─────────────────────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════════════════
-function Dashboard({ user, friends, accounts, transactions, setTab }) {
+function Dashboard({ user, friends, accounts, transactions, settlements, setTab }) {
   const totalGiven    = transactions.filter(t=>t.type==='expense').reduce((s,t)=>s+Number(t.amount),0);
   const totalPersonal = transactions.filter(t=>t.type==='personal').reduce((s,t)=>s+Number(t.amount),0);
   const totalReceived = transactions.filter(t=>t.type==='payment').reduce((s,t)=>s+Number(t.amount),0);
@@ -960,6 +1028,10 @@ function Dashboard({ user, friends, accounts, transactions, setTab }) {
           <div className="hero-sub">Here's your financial snapshot</div>
         </div>
         <div className="hero-right">
+          <div className="hero-mini">
+            <div className="hero-mini-label">🔄 Settled</div>
+            <div className="hero-mini-value">{fmt(settlements.reduce((s,t)=>s+Number(t.amount),0))}</div>
+          </div>
           <div className="hero-mini">
             <div className="hero-mini-label">💸 Total Given</div>
             <div className="hero-mini-value">{fmt(totalGiven)}</div>
@@ -2075,8 +2147,359 @@ function Insights({ friends, accounts, transactions }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// ─── ROOT APP ────────────────────────────────────────────────────────────────
+// ─── SETTLEMENT MODAL ────────────────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════════════════
+const SETTLE_METHODS = [
+  { key: 'cash',         label: 'Cash',         icon: '💵', desc: 'Physical cash payment' },
+  { key: 'bank_account', label: 'Bank / UPI',   icon: '🏦', desc: 'NEFT / IMPS / UPI transfer' },
+  { key: 'credit_card',  label: 'Credit Card',  icon: '💳', desc: 'Card bill payment' },
+];
+
+function SettlementModal({ userId, accounts, onClose, onSaved }) {
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({
+    fromType:      'cash',
+    fromAccountId: '',
+    toType:        'credit_card',
+    toAccountId:   '',
+    amount:        '',
+    date:          today(),
+    note:          '',
+  });
+  const set = k => v => setForm(f => ({ ...f, [k]: v }));
+  const setE = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
+
+  const ccAccounts   = accounts.filter(a => a.type === 'credit_card');
+  const bankAccounts = accounts.filter(a => a.type === 'bank_account');
+
+  const accountsFor = type => type === 'credit_card' ? ccAccounts : type === 'bank_account' ? bankAccounts : [];
+
+  const settlementLabel = () => {
+    const from = SETTLE_METHODS.find(m => m.key === form.fromType);
+    const to   = SETTLE_METHODS.find(m => m.key === form.toType);
+    return `${from?.icon} ${from?.label}  →  ${to?.icon} ${to?.label}`;
+  };
+
+  const submit = async (e) => {
+    e.preventDefault();
+    if (!form.amount || !form.date) { alert('Fill all required fields'); return; }
+    if (['bank_account','credit_card'].includes(form.fromType) && !form.fromAccountId) { alert('Select the source account'); return; }
+    if (!form.toAccountId) { alert('Select the destination account'); return; }
+    if (form.fromType !== 'cash' && form.fromAccountId === form.toAccountId) { alert('Source and destination cannot be the same account'); return; }
+    const amt = parseFloat(form.amount);
+    if (isNaN(amt) || amt <= 0) { alert('Enter a valid amount'); return; }
+    setSaving(true);
+    try {
+      await addDoc(collection(db, 'settlements'), {
+        userId,
+        fromType:      form.fromType,
+        fromAccountId: form.fromType === 'cash' ? null : form.fromAccountId,
+        toType:        form.toType,
+        toAccountId:   form.toAccountId,
+        amount:        amt,
+        date:          form.date,
+        note:          form.note,
+        label:         settlementLabel(),
+      });
+      onSaved('Settlement recorded ✓');
+    } catch (err) { alert('Save failed'); console.error(err); }
+    finally { setSaving(false); }
+  };
+
+  return (
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal modal-settle">
+        <div className="modal-body">
+          {/* Header */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
+            <div style={{ width: 44, height: 44, borderRadius: 13, background: 'var(--indbg)', border: '1px solid var(--indbrd)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>🔄</div>
+            <div>
+              <div className="modal-title" style={{ marginBottom: 0 }}>Record Settlement</div>
+              <div className="modal-sub" style={{ marginBottom: 0 }}>Log a payment between any two accounts or cash</div>
+            </div>
+          </div>
+
+          <form onSubmit={submit}>
+            {/* FROM — payment source */}
+            <div style={{ marginBottom: 18 }}>
+              <div className="field-label" style={{ marginBottom: 10 }}>💳 Paying From (Source)</div>
+              <div className="method-grid">
+                {SETTLE_METHODS.map(m => (
+                  <button key={m.key} type="button"
+                    className={`method-btn ${form.fromType === m.key ? 'active' : ''}`}
+                    onClick={() => setForm(f => ({ ...f, fromType: m.key, fromAccountId: '' }))}>
+                    <span className="method-btn-ico">{m.icon}</span>
+                    <span className="method-btn-lbl">{m.label}</span>
+                  </button>
+                ))}
+              </div>
+              {form.fromType !== 'cash' && (
+                <div className="field">
+                  <label className="field-label">Which {form.fromType === 'credit_card' ? 'Credit Card' : 'Bank Account'} *</label>
+                  <select className="field-input" value={form.fromAccountId} onChange={setE('fromAccountId')}>
+                    <option value="">Select account…</option>
+                    {accountsFor(form.fromType).map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                  </select>
+                </div>
+              )}
+              {form.fromType === 'cash' && (
+                <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 14px', fontSize: 13, color: 'var(--ink3)', fontWeight: 500 }}>
+                  💵 Cash — no account needed
+                </div>
+              )}
+            </div>
+
+            {/* Arrow divider */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
+              <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--indbg)', border: '1px solid var(--indbrd)', borderRadius: 20, padding: '5px 14px', fontSize: 12, fontWeight: 700, color: 'var(--ind)' }}>
+                ↓ Settling to
+              </div>
+              <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+            </div>
+
+            {/* TO — destination */}
+            <div style={{ marginBottom: 20 }}>
+              <div className="field-label" style={{ marginBottom: 10 }}>🎯 Paying Into (Destination)</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 9, marginBottom: 14 }}>
+                {SETTLE_METHODS.filter(m => m.key !== 'cash').map(m => (
+                  <button key={m.key} type="button"
+                    className={`method-btn ${form.toType === m.key ? 'active' : ''}`}
+                    onClick={() => setForm(f => ({ ...f, toType: m.key, toAccountId: '' }))}>
+                    <span className="method-btn-ico">{m.icon}</span>
+                    <span className="method-btn-lbl">{m.label}</span>
+                  </button>
+                ))}
+              </div>
+              <div className="field">
+                <label className="field-label">Which {form.toType === 'credit_card' ? 'Credit Card' : 'Bank Account'} *</label>
+                <select className="field-input" value={form.toAccountId} onChange={setE('toAccountId')}>
+                  <option value="">Select account…</option>
+                  {accountsFor(form.toType).map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                </select>
+              </div>
+            </div>
+
+            {/* Amount + Date */}
+            <div className="form-row g2" style={{ marginBottom: 14 }}>
+              <div className="field">
+                <label className="field-label">Amount (₹) *</label>
+                <input className="field-input" type="number" placeholder="0" min="1" value={form.amount} onChange={setE('amount')} />
+              </div>
+              <div className="field">
+                <label className="field-label">Date *</label>
+                <input className="field-input" type="date" value={form.date} onChange={setE('date')} />
+              </div>
+            </div>
+
+            {/* Note */}
+            <div className="form-row" style={{ marginBottom: 0 }}>
+              <div className="field">
+                <label className="field-label">Note (optional)</label>
+                <input className="field-input" placeholder="e.g. HDFC CC bill paid via SBI net banking" value={form.note} onChange={setE('note')} />
+              </div>
+            </div>
+
+            {/* Preview pill */}
+            {form.amount && (
+              <div style={{ marginTop: 14, padding: '12px 16px', background: 'var(--indbg)', border: '1px solid var(--indbrd)', borderRadius: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontSize: 18 }}>🔄</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--ind)' }}>{settlementLabel()}</div>
+                  <div style={{ fontFamily: 'var(--fh)', fontSize: 18, fontWeight: 900, color: 'var(--ind-dark)', marginTop: 1 }}>{fmt(parseFloat(form.amount) || 0)}</div>
+                </div>
+              </div>
+            )}
+
+            <div className="modal-actions">
+              <button type="button" className="btn btn-ghost" onClick={onClose} style={{ flex: 1 }}>Cancel</button>
+              <button type="submit" className="btn" disabled={saving}
+                style={{ flex: 2, background: 'var(--ind)', color: 'white', boxShadow: '0 2px 10px rgba(79,70,229,0.3)' }}>
+                {saving ? 'Saving…' : '🔄 Record Settlement'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ─── SETTLEMENTS PAGE ────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════════
+function SettlementsPage({ user, accounts, settlements, showToast, onNew }) {
+  const [filterFrom, setFrom] = useState('');
+  const [filterTo,   setTo]   = useState('');
+  const aMap = Object.fromEntries(accounts.map(a => [a.id, a]));
+
+  const del = async (id) => {
+    if (!window.confirm('Delete this settlement record?')) return;
+    try { await deleteDoc(doc(db, 'settlements', id)); showToast('Settlement deleted'); }
+    catch { showToast('Delete failed', 'error'); }
+  };
+
+  let rows = [...settlements].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  if (filterFrom) rows = rows.filter(s => s.date >= filterFrom);
+  if (filterTo)   rows = rows.filter(s => s.date <= filterTo);
+
+  const totalSettled = rows.reduce((s, r) => s + Number(r.amount), 0);
+
+  // Group by settle type for summary
+  const byType = {};
+  rows.forEach(r => {
+    const k = `${r.fromType}→${r.toType}`;
+    if (!byType[k]) byType[k] = { label: r.label || k, total: 0, count: 0 };
+    byType[k].total += Number(r.amount);
+    byType[k].count += 1;
+  });
+
+  const methodIcon = type => type === 'cash' ? '💵' : type === 'credit_card' ? '💳' : '🏦';
+  const methodName = type => type === 'cash' ? 'Cash' : type === 'credit_card' ? 'Credit Card' : 'Bank / UPI';
+
+  const accName = (type, id) => {
+    if (type === 'cash') return 'Cash';
+    return aMap[id]?.name || '—';
+  };
+
+  return (
+    <div>
+      {/* Page header */}
+      <div className="page-head">
+        <div>
+          <div className="page-title">Settlements</div>
+          <div className="page-sub">Inter-account & inter-method payment records</div>
+        </div>
+        <button className="btn" onClick={onNew}
+          style={{ background: 'var(--ind)', color: 'white', boxShadow: '0 2px 10px rgba(79,70,229,0.3)' }}>
+          🔄 Record Settlement
+        </button>
+      </div>
+
+      {/* Hero banner */}
+      <div className="settle-hero">
+        <div>
+          <div className="settle-hero-title">Settlement Tracker</div>
+          <div className="settle-hero-sub">Track every payment you've made — cash to CC, bank to CC, or bank to bank</div>
+        </div>
+        <div className="settle-stats">
+          <div className="settle-stat">
+            <div className="settle-stat-lbl">Total Settled</div>
+            <div className="settle-stat-val">{fmt(totalSettled)}</div>
+          </div>
+          <div className="settle-stat">
+            <div className="settle-stat-lbl">Records</div>
+            <div className="settle-stat-val">{rows.length}</div>
+          </div>
+          <div className="settle-stat">
+            <div className="settle-stat-lbl">Flow Types</div>
+            <div className="settle-stat-val">{Object.keys(byType).length}</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Summary cards by type */}
+      {Object.keys(byType).length > 0 && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 14, marginBottom: 24 }}>
+          {Object.entries(byType).map(([key, val]) => {
+            const [fromT, toT] = key.split('→');
+            return (
+              <div key={key} style={{ background: 'var(--card)', border: '1px solid var(--indbrd)', borderRadius: 14, padding: '16px 18px', boxShadow: 'var(--s1)' }}>
+                <div className="flow-pill" style={{ marginBottom: 12 }}>
+                  {methodIcon(fromT)} {methodName(fromT)}
+                  <span className="flow-arrow">→</span>
+                  {methodIcon(toT)} {methodName(toT)}
+                </div>
+                <div style={{ fontFamily: 'var(--fh)', fontSize: 22, fontWeight: 900, color: 'var(--ind)', marginBottom: 3 }}>{fmt(val.total)}</div>
+                <div style={{ fontSize: 12, color: 'var(--ink3)', fontWeight: 500 }}>{val.count} settlement{val.count !== 1 ? 's' : ''}</div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Filters */}
+      <div className="filter-bar">
+        <input className="filter-select filter-date" type="date" value={filterFrom} onChange={e => setFrom(e.target.value)} title="From date" />
+        <input className="filter-select filter-date" type="date" value={filterTo}   onChange={e => setTo(e.target.value)}   title="To date" />
+        {(filterFrom || filterTo) && <button className="filter-clear" onClick={() => { setFrom(''); setTo(''); }}>✕ Clear</button>}
+        <span className="filter-count">{rows.length} record{rows.length !== 1 ? 's' : ''}</span>
+      </div>
+
+      {/* Table */}
+      {rows.length === 0 ? (
+        <div className="tbl-card">
+          <div className="empty">
+            <div className="empty-icon">🔄</div>
+            <div className="empty-title">No settlements yet</div>
+            <div className="empty-sub">Record a cash → CC payment, bank transfer, or any inter-account settlement</div>
+          </div>
+        </div>
+      ) : (
+        <div className="tbl-card">
+          <div className="tbl-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Settlement Flow</th>
+                  <th>From</th>
+                  <th>To</th>
+                  <th>Amount</th>
+                  <th>Note</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map(s => (
+                  <tr key={s.id}>
+                    <td className="td-muted">{fmtDate(s.date)}</td>
+                    <td>
+                      <div className="flow-pill">
+                        {methodIcon(s.fromType)} {methodName(s.fromType)}
+                        <span className="flow-arrow">→</span>
+                        {methodIcon(s.toType)} {methodName(s.toType)}
+                      </div>
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                        <span style={{ fontSize: 16 }}>{methodIcon(s.fromType)}</span>
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--ink)' }}>{methodName(s.fromType)}</div>
+                          {s.fromAccountId && <div style={{ fontSize: 11, color: 'var(--ink3)', fontWeight: 500 }}>{aMap[s.fromAccountId]?.name || '—'}</div>}
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                        <span style={{ fontSize: 16 }}>{methodIcon(s.toType)}</span>
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--ink)' }}>{methodName(s.toType)}</div>
+                          {s.toAccountId && <div style={{ fontSize: 11, color: 'var(--ink3)', fontWeight: 500 }}>{aMap[s.toAccountId]?.name || '—'}</div>}
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <span style={{ fontFamily: 'var(--fh)', fontWeight: 900, fontSize: 15, color: 'var(--ind)' }}>
+                        {fmt(s.amount)}
+                      </span>
+                    </td>
+                    <td className="td-muted" style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {s.note || '—'}
+                    </td>
+                    <td>
+                      <button className="btn btn-danger btn-sm btn-icon" onClick={() => del(s.id)} title="Delete"><IcoTrash /></button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 export default function App() {
   const [user,setUser]     = useState(null);
   const [booting,setBooting] = useState(true);
