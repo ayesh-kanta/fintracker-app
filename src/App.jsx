@@ -429,6 +429,35 @@ body { background: var(--bg); font-family: var(--fb); color: var(--ink); }
 .bkd-table tr:last-child td { border-bottom: none; }
 .bkd-table tr:hover td { background: var(--bg); }
 
+/* ─── ACCOUNT LEDGER drilldown ─── */
+.acc-ledger { border-top: 2px solid var(--border); background: #f5faf9; animation: slideDown 0.2s cubic-bezier(0.22,1,0.36,1); }
+.acc-ledger-header { padding: 18px 22px 14px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.acc-ledger-title { font-family: var(--fh); font-size: 15px; font-weight: 900; color: var(--ink); display: flex; align-items: center; gap: 8px; }
+.acc-ledger-stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; padding: 0 22px 16px; }
+.als-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; box-shadow: var(--s1); }
+.als-lbl { font-size: 10px; font-weight: 700; color: var(--ink3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 5px; }
+.als-val { font-family: var(--fh); font-size: 18px; font-weight: 900; color: var(--ink); }
+.als-val.red   { color: var(--red); }
+.als-val.green { color: var(--green); }
+.als-val.ind   { color: var(--ind); }
+.als-val.teal  { color: var(--t); }
+
+/* account quick-tabs on Transactions page */
+.acc-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.acc-tab {
+  display: flex; align-items: center; gap: 7px;
+  padding: 7px 14px; border-radius: 22px; cursor: pointer;
+  background: var(--card); border: 1.5px solid var(--border);
+  font-family: var(--fb); font-size: 13px; font-weight: 600;
+  color: var(--ink2); transition: all 0.15s; white-space: nowrap;
+}
+.acc-tab:hover { border-color: var(--t); color: var(--t); background: var(--tbg); }
+.acc-tab.active { background: var(--t); border-color: var(--t); color: white; }
+.acc-tab-count { border-radius: 20px; font-size: 10px; font-weight: 800; padding: 1px 7px; background: var(--bg2); color: var(--ink3); }
+.acc-tab.active .acc-tab-count { background: rgba(255,255,255,0.25); color: white; }
+.ledger-settle-row td { background: #f0eeff !important; }
+.ledger-settle-row:hover td { background: #e8e5ff !important; }
+
 /* ─── BUTTONS ─── */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 7px;
@@ -974,7 +1003,7 @@ function AppShell({ user, onLogout }) {
           {tab==='dashboard'    && <Dashboard    user={user} friends={friends} accounts={accounts} transactions={transactions} settlements={settlements} setTab={setTab}/>}
           {tab==='transactions' && <Transactions user={user} friends={friends} accounts={accounts} transactions={transactions} showToast={showToast}/>}
           {tab==='friends'      && <Friends      user={user} friends={friends} accounts={accounts} transactions={transactions} showToast={showToast}/>}
-          {tab==='accounts'     && <Accounts     user={user} accounts={accounts} transactions={transactions} friends={friends} showToast={showToast}/>}
+          {tab==='accounts'     && <Accounts     user={user} accounts={accounts} transactions={transactions} settlements={settlements} friends={friends} showToast={showToast}/>}
           {tab==='settlements'  && <SettlementsPage user={user} accounts={accounts} settlements={settlements} showToast={showToast} onNew={()=>setSettleForm(true)}/>}
           {tab==='statement'    && <AccountStatement accounts={accounts} transactions={transactions} friends={friends}/>}
           {tab==='insights'     && <Insights     friends={friends} accounts={accounts} transactions={transactions}/>}
@@ -1259,6 +1288,23 @@ function Transactions({ user, friends, accounts, transactions, showToast }) {
             <IcoPlus/> Add Transaction
           </button>
         </div>
+      </div>
+
+      {/* Account quick-filter tabs */}
+      <div className="acc-tabs">
+        <button className={`acc-tab ${fa==='all'?'active':''}`} onClick={()=>setFA('all')}>
+          🏦 All Accounts
+          <span className="acc-tab-count">{transactions.length}</span>
+        </button>
+        {accounts.map(a=>{
+          const cnt = transactions.filter(t=>t.accountId===a.id).length;
+          return (
+            <button key={a.id} className={`acc-tab ${fa===a.id?'active':''}`} onClick={()=>setFA(a.id)}>
+              {a.type==='credit_card'?'💳':'🏦'} {a.name}
+              <span className="acc-tab-count">{cnt}</span>
+            </button>
+          );
+        })}
       </div>
 
       <div className="filter-bar">
@@ -1739,12 +1785,13 @@ function Friends({ user, friends, accounts, transactions, showToast }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 // ─── ACCOUNTS ────────────────────────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════════════════
-function Accounts({ user, accounts, transactions, friends, showToast }) {
+function Accounts({ user, accounts, transactions, settlements, friends, showToast }) {
   const [showForm,setShowForm]=useState(false);
   const [editA,setEditA]=useState(null);
   const [form,setForm]=useState({name:'',type:'credit_card',limit:'',balance:''});
   const [saving,setSaving]=useState(false);
-  const [expand,setExpand]=useState(null);
+  const [expand,setExpand]=useState(null);     // friend breakdown
+  const [ledger,setLedger]=useState(null);     // account ledger drilldown
   const set=k=>e=>setForm(f=>({...f,[k]:e.target.value}));
 
   const submit=async(e)=>{
@@ -1768,10 +1815,13 @@ function Accounts({ user, accounts, transactions, friends, showToast }) {
     catch{showToast('Delete failed','error');}
   };
 
+  const fMap=Object.fromEntries(friends.map(f=>[f.id,f]));
+
   const withStats=accounts.map(a=>{
     const txns=transactions.filter(t=>t.accountId===a.id);
     const spent=txns.filter(t=>t.type==='expense').reduce((s,t)=>s+Number(t.amount),0);
     const back=txns.filter(t=>t.type==='payment').reduce((s,t)=>s+Number(t.amount),0);
+    const personal=txns.filter(t=>t.type==='personal').reduce((s,t)=>s+Number(t.amount),0);
     const net=spent-back;
     const fbd=friends.map(f=>{
       const fs=txns.filter(t=>t.friendId===f.id&&t.type==='expense').reduce((s,t)=>s+Number(t.amount),0);
@@ -1782,8 +1832,27 @@ function Accounts({ user, accounts, transactions, friends, showToast }) {
     const usedP=a.type==='credit_card'&&a.limit?Math.min(100,(net/a.limit)*100):0;
     const rem=a.type==='bank_account'&&a.balance!=null?a.balance-net:null;
     const balP=a.type==='bank_account'&&a.balance?Math.min(100,(net/a.balance)*100):0;
-    return{...a,spent,back,net,avail,usedP,rem,balP,fbd,cnt:txns.length};
+    // settlements involving this account
+    const settles=(settlements||[]).filter(s=>s.fromAccountId===a.id||s.toAccountId===a.id);
+    const settleIn=settles.filter(s=>s.toAccountId===a.id).reduce((s,t)=>s+Number(t.amount),0);
+    const settleOut=settles.filter(s=>s.fromAccountId===a.id).reduce((s,t)=>s+Number(t.amount),0);
+    return{...a,spent,back,personal,net,avail,usedP,rem,balP,fbd,settles,settleIn,settleOut,cnt:txns.length};
   });
+
+  // Build a merged chronological ledger for one account
+  const buildLedger=(a)=>{
+    const txnRows=transactions.filter(t=>t.accountId===a.id).map(t=>({
+      ...t, _kind:'txn',
+      _date: t.date||'',
+      _amt: t.type==='payment'?Number(t.amount):-Number(t.amount),
+    }));
+    const settleRows=(settlements||[]).filter(s=>s.fromAccountId===a.id||s.toAccountId===a.id).map(s=>({
+      ...s, _kind:'settle',
+      _date: s.date||'',
+      _amt: s.toAccountId===a.id ? Number(s.amount) : -Number(s.amount),
+    }));
+    return [...txnRows,...settleRows].sort((a,b)=>a._date.localeCompare(b._date));
+  };
 
   return(
     <div>
@@ -1841,6 +1910,7 @@ function Accounts({ user, accounts, transactions, friends, showToast }) {
         <div className="accounts-grid">
           {withStats.map(a=>{
             const isCC=a.type==='credit_card';
+            const isLedgerOpen=ledger===a.id;
             return(
               <div key={a.id}>
                 <div className="account-card">
@@ -1848,7 +1918,7 @@ function Accounts({ user, accounts, transactions, friends, showToast }) {
                   <div className="acc-body">
                     <div className={`acc-chip ${isCC?'cc':'bank'}`}>{isCC?'💳 Credit Card':'🏦 Savings Account'}</div>
                     <div className="acc-name">{a.name}</div>
-                    <div className="acc-sub">{a.cnt} transaction{a.cnt!==1?'s':''}</div>
+                    <div className="acc-sub">{a.cnt} transaction{a.cnt!==1?'s':''}{a.settles.length>0?` · ${a.settles.length} settlement${a.settles.length!==1?'s':''} linked`:''}</div>
                     {isCC&&a.limit?(
                       <div>
                         <div className="bar-row"><span>Used <strong style={{color:'var(--ink2)'}}>{fmt(a.net)}</strong></span><span>{Math.round(a.usedP)}% of {fmt(a.limit)}</span></div>
@@ -1876,11 +1946,143 @@ function Accounts({ user, accounts, transactions, friends, showToast }) {
                     )}
                   </div>
                   <div className="acc-actions">
-                    <button className="acc-btn" onClick={()=>setExpand(expand===a.id?null:a.id)}>👥 {expand===a.id?'Hide':'By Friend'}</button>
+                    <button className="acc-btn" style={{color:isLedgerOpen?'var(--t)':'',background:isLedgerOpen?'var(--tbg)':''}}
+                      onClick={()=>{setLedger(isLedgerOpen?null:a.id);setExpand(null);}}>
+                      📋 {isLedgerOpen?'Hide':'All Txns'}
+                    </button>
+                    <button className="acc-btn" onClick={()=>{setExpand(expand===a.id?null:a.id);setLedger(null);}}>
+                      👥 {expand===a.id?'Hide':'By Friend'}
+                    </button>
                     <button className="acc-btn" onClick={()=>{setForm({name:a.name,type:a.type,limit:a.limit?String(a.limit):'',balance:a.balance?String(a.balance):''});setEditA(a);setShowForm(true);}}>✏️ Edit</button>
                     <button className="acc-btn" style={{color:'var(--red)'}} onClick={()=>del(a)}>🗑️ Delete</button>
                   </div>
                 </div>
+
+                {/* ── FULL ACCOUNT LEDGER ── */}
+                {isLedgerOpen&&(()=>{
+                  const rows=buildLedger(a);
+                  const totDebit=rows.filter(r=>r._amt<0).reduce((s,r)=>s+Math.abs(r._amt),0);
+                  const totCredit=rows.filter(r=>r._amt>0).reduce((s,r)=>s+r._amt,0);
+                  // compute running balance from bottom up (oldest first)
+                  let running=0;
+                  const withBal=rows.map(r=>{running+=r._amt;return{...r,_running:running};});
+                  // display newest first
+                  const display=[...withBal].reverse();
+                  return(
+                    <div className="acc-ledger">
+                      <div className="acc-ledger-header">
+                        <div className="acc-ledger-title">
+                          {isCC?'💳':'🏦'} All Transactions — {a.name}
+                          <span style={{background:'var(--tbg)',color:'var(--t)',border:'1px solid var(--tbrd)',borderRadius:20,fontSize:10,fontWeight:700,padding:'2px 8px'}}>{display.length} entries</span>
+                        </div>
+                        <div style={{fontSize:11,color:'var(--ink3)',fontWeight:500}}>
+                          💜 Purple rows = settlements · Other rows = transactions
+                        </div>
+                      </div>
+
+                      {/* Summary stats */}
+                      <div className="acc-ledger-stats">
+                        <div className="als-card">
+                          <div className="als-lbl">💸 Total Debited</div>
+                          <div className="als-val red">{fmt(totDebit)}</div>
+                        </div>
+                        <div className="als-card">
+                          <div className="als-lbl">💰 Total Credited</div>
+                          <div className="als-val green">{fmt(totCredit)}</div>
+                        </div>
+                        <div className="als-card">
+                          <div className="als-lbl">🔄 Settlements</div>
+                          <div className="als-val ind">{a.settles.length} ({fmt(a.settleIn+a.settleOut)})</div>
+                        </div>
+                        <div className="als-card" style={{background:running>0?'var(--redbg)':running<0?'var(--greenbg)':'var(--card)',borderColor:running>0?'var(--redbrd)':running<0?'var(--greenbrd)':'var(--border)'}}>
+                          <div className="als-lbl">⚖️ Net Balance</div>
+                          <div className="als-val" style={{color:running>0?'var(--red)':running<0?'var(--green)':'var(--ink3)'}}>{running===0?'✓ Clear':running>0?`${fmt(running)} owed`:fmt(Math.abs(running))}</div>
+                        </div>
+                      </div>
+
+                      {/* Full ledger table */}
+                      <div style={{padding:'0 22px 22px'}}>
+                        <div style={{background:'var(--card)',border:'1px solid var(--border)',borderRadius:14,overflow:'hidden',boxShadow:'var(--s1)'}}>
+                          <table style={{width:'100%',borderCollapse:'collapse'}}>
+                            <thead>
+                              <tr style={{background:'var(--bg)'}}>
+                                <th style={{padding:'10px 14px',textAlign:'left',fontSize:10,fontWeight:700,letterSpacing:'0.07em',textTransform:'uppercase',color:'var(--ink3)',borderBottom:'1px solid var(--border)',whiteSpace:'nowrap'}}>Date</th>
+                                <th style={{padding:'10px 14px',textAlign:'left',fontSize:10,fontWeight:700,letterSpacing:'0.07em',textTransform:'uppercase',color:'var(--ink3)',borderBottom:'1px solid var(--border)'}}>Type</th>
+                                <th style={{padding:'10px 14px',textAlign:'left',fontSize:10,fontWeight:700,letterSpacing:'0.07em',textTransform:'uppercase',color:'var(--ink3)',borderBottom:'1px solid var(--border)'}}>Party / Flow</th>
+                                <th style={{padding:'10px 14px',textAlign:'left',fontSize:10,fontWeight:700,letterSpacing:'0.07em',textTransform:'uppercase',color:'var(--ink3)',borderBottom:'1px solid var(--border)'}}>Description</th>
+                                <th style={{padding:'10px 14px',textAlign:'right',fontSize:10,fontWeight:700,letterSpacing:'0.07em',textTransform:'uppercase',color:'var(--ink3)',borderBottom:'1px solid var(--border)'}}>Debit</th>
+                                <th style={{padding:'10px 14px',textAlign:'right',fontSize:10,fontWeight:700,letterSpacing:'0.07em',textTransform:'uppercase',color:'var(--ink3)',borderBottom:'1px solid var(--border)'}}>Credit</th>
+                                <th style={{padding:'10px 14px',textAlign:'right',fontSize:10,fontWeight:700,letterSpacing:'0.07em',textTransform:'uppercase',color:'var(--ink3)',borderBottom:'1px solid var(--border)',whiteSpace:'nowrap'}}>Running Balance</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {display.map((row,i)=>{
+                                const isSettle=row._kind==='settle';
+                                const isCredit=row._amt>0;
+                                const f=!isSettle&&fMap[row.friendId];
+                                const settleDir=isSettle?(row.toAccountId===a.id?'credit':'debit'):null;
+
+                                return(
+                                  <tr key={row.id+i} className={isSettle?'ledger-settle-row':''}>
+                                    <td style={{padding:'12px 14px',borderBottom:'1px solid var(--border)',fontSize:12,color:'var(--ink3)',fontWeight:500,whiteSpace:'nowrap'}}>{fmtDate(row._date)}</td>
+                                    <td style={{padding:'12px 14px',borderBottom:'1px solid var(--border)'}}>
+                                      {isSettle ? (
+                                        <span className="txn-settle">🔄 Settlement</span>
+                                      ) : row.type==='personal' ? (
+                                        <span className="txn-personal">Personal</span>
+                                      ) : row.type==='expense' ? (
+                                        <span className="txn-expense">Friend Exp</span>
+                                      ) : (
+                                        <span className="txn-payment">Payment In</span>
+                                      )}
+                                    </td>
+                                    <td style={{padding:'12px 14px',borderBottom:'1px solid var(--border)'}}>
+                                      {isSettle?(
+                                        <div style={{display:'flex',alignItems:'center',gap:7}}>
+                                          <span style={{fontSize:15}}>{settleDir==='credit'?'⬇️':'⬆️'}</span>
+                                          <div>
+                                            <div style={{fontWeight:700,fontSize:13,color:'var(--ind)'}}>
+                                              {settleDir==='credit'?'Received from':'Sent to'} {row.fromType==='cash'?'Cash':row.toType==='cash'?'Cash':'account'}
+                                            </div>
+                                            <div style={{fontSize:11,color:'var(--ink3)',fontWeight:500}}>{row.label||'Settlement'}</div>
+                                          </div>
+                                        </div>
+                                      ):row.type==='personal'?(
+                                        <span style={{color:'var(--amber)',fontWeight:600,fontSize:13}}>🧾 Self</span>
+                                      ):f?(
+                                        <div style={{display:'flex',alignItems:'center',gap:8}}>
+                                          <div style={{width:28,height:28,borderRadius:'50%',background:f.color||colorFor(f.name),display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:900,color:'white',fontFamily:'var(--fh)',flexShrink:0}}>{initials(f.name)}</div>
+                                          <span style={{fontWeight:700,fontSize:13}}>{f.name}</span>
+                                        </div>
+                                      ):<span style={{color:'var(--ink4)'}}>—</span>}
+                                    </td>
+                                    <td style={{padding:'12px 14px',borderBottom:'1px solid var(--border)',color:'var(--ink2)',maxWidth:200,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',fontSize:13}}>
+                                      {row.note||<span style={{color:'var(--ink4)'}}>—</span>}
+                                    </td>
+                                    <td style={{padding:'12px 14px',borderBottom:'1px solid var(--border)',textAlign:'right',fontFamily:'var(--fh)',fontWeight:800,fontSize:14,color:isSettle&&!isCredit?'var(--ind)':'var(--red)'}}>
+                                      {row._amt<0?fmt(Math.abs(row._amt)):''}
+                                    </td>
+                                    <td style={{padding:'12px 14px',borderBottom:'1px solid var(--border)',textAlign:'right',fontFamily:'var(--fh)',fontWeight:800,fontSize:14,color:isSettle&&isCredit?'var(--ind)':'var(--green)'}}>
+                                      {row._amt>0?fmt(row._amt):''}
+                                    </td>
+                                    <td style={{padding:'12px 14px',borderBottom:'1px solid var(--border)',textAlign:'right'}}>
+                                      <span style={{fontFamily:'var(--fh)',fontWeight:800,fontSize:13,color:row._running>0?'var(--red)':row._running<0?'var(--green)':'var(--ink3)'}}>
+                                        {row._running===0?'✓ Clear':row._running>0?fmt(row._running):`+${fmt(Math.abs(row._running))}`}
+                                      </span>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                          {display.length===0&&<div style={{padding:'40px',textAlign:'center',fontSize:13,color:'var(--ink3)'}}>No activity on this account yet.</div>}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Friend breakdown */}
                 {expand===a.id&&(
                   <div className="bkd-panel">
                     <div style={{padding:'13px 18px 9px',fontFamily:'var(--fh)',fontWeight:800,fontSize:14,color:'var(--ink)'}}>👥 Per-Friend Breakdown</div>
