@@ -1144,29 +1144,40 @@ function Transactions({ user, friends, accounts, transactions, settlements, show
     return true;
   });
 
-  // Sort all rows oldest→newest to compute running balance
-  const sorted = [...rows].sort((a,b) => a._date.localeCompare(b._date) || 0);
+  // ── Pre-compute per-account remaining balance after every entry ──────────
+  // For each account, sort ALL its txns+settlements oldest→newest,
+  // then track remaining = capacity + credits - debits at each point.
+  const remainingMap = {}; // key: txnId or "settleId_accId" → remaining after that entry
+  accounts.forEach(acc => {
+    const capacity = acc.type === 'credit_card' ? (acc.limit || 0) : (acc.balance || 0);
+    // Gather every entry touching this account
+    const accEntries = [
+      ...transactions.filter(t => t.accountId === acc.id).map(t => ({
+        key: t.id,
+        _date: t.date || '',
+        delta: t.type === 'payment' ? Number(t.amount) : -Number(t.amount),
+        // payment = money received = +, expense/personal = money spent = -
+      })),
+      ...(settlements||[])
+        .filter(s => s.fromAccountId === acc.id || s.toAccountId === acc.id)
+        .map(s => ({
+          key: s.id + '__' + acc.id,
+          _date: s.date || '',
+          // money flowing INTO this account (e.g. someone pays off CC, or bank receives) = +
+          // money flowing OUT (cash/bank paying for CC bill) = -
+          delta: s.toAccountId === acc.id ? Number(s.amount) : -Number(s.amount),
+        })),
+    ].sort((a, b) => a._date.localeCompare(b._date));
 
-  // Compute running balance: for transactions credit = +, debit = -
-  // For settlements: if filtering by specific account, in = +, out = -; else skip settlement contribution
-  let running = 0;
-  const withBal = sorted.map(r => {
-    let delta = 0;
-    if (r._kind === 'txn') {
-      delta = r.type === 'payment' ? Number(r.amount) : -Number(r.amount);
-    } else if (r._kind === 'settle') {
-      if (fa !== 'all') {
-        // Account-specific view: settlements in/out matter
-        delta = r.toAccountId === fa ? Number(r.amount) : -Number(r.amount);
-      }
-      // Global view: settlements are internal—no net effect on overall balance
-    }
-    running += delta;
-    return { ...r, _running: running };
+    let rem = capacity;
+    accEntries.forEach(entry => {
+      rem += entry.delta;
+      remainingMap[entry.key] = { rem, capacity, accType: acc.type, accName: acc.name };
+    });
   });
 
   // Display newest first
-  const displayRows = [...withBal].reverse();
+  const displayRows = [...rows].sort((a,b) => b._date.localeCompare(a._date));
 
   const clear = () => { setFF('all'); setFA('all'); setFT('all'); setFrom(''); setTo(''); };
   const hasFilter = ff !== 'all' || fa !== 'all' || ft !== 'all' || from || to;
@@ -1237,14 +1248,14 @@ function Transactions({ user, friends, accounts, transactions, settlements, show
         <span className="filter-count">{displayRows.length} result{displayRows.length!==1?'s':''}</span>
       </div>
 
-      {/* Balance explanation note */}
+      {/* Column explanation note */}
       <div style={{
         display:'flex', alignItems:'center', gap:8, marginBottom:14,
-        fontSize:12, color:'var(--ink3)', fontWeight:400
+        fontSize:12, color:'var(--ink3)', fontWeight:400, flexWrap:'wrap',
       }}>
         <span style={{background:'var(--indbg)',border:'1px solid var(--indbrd)',borderRadius:6,padding:'2px 8px',fontSize:11,fontWeight:700,color:'var(--ind)'}}>🔄 Settlement</span>
-        rows are transfers between accounts · Balance = cumulative net{fa!=='all'?' for this account':' across all activity'}
-        {fa==='all' && <span style={{color:'var(--ink4)'}}> (settlements don't affect global balance)</span>}
+        rows show account-to-account transfers ·
+        <strong style={{color:'var(--ink2)'}}>Remaining 💳</strong> = credit available or cash left in that account after each entry
       </div>
 
       {displayRows.length===0?(
@@ -1261,7 +1272,7 @@ function Transactions({ user, friends, accounts, transactions, settlements, show
                   <th>Account</th>
                   <th style={{textAlign:'right'}}>Amount</th>
                   <th>Note</th>
-                  <th style={{textAlign:'right'}}>Balance</th>
+                  <th style={{textAlign:'right',whiteSpace:'nowrap'}}>Remaining 💳</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -1272,7 +1283,6 @@ function Transactions({ user, friends, accounts, transactions, settlements, show
                   if (isSettle) {
                     const fromAcc = aMap[r.fromAccountId];
                     const toAcc   = aMap[r.toAccountId];
-                    const bal = r._running;
                     return (
                       <tr key={r.id+'-s'} style={{background:'#faf5ff'}}>
                         <td className="td-muted">{fmtDate(r._date)}</td>
@@ -1302,14 +1312,31 @@ function Transactions({ user, friends, accounts, transactions, settlements, show
                           {r.note||<span style={{color:'var(--ink4)'}}>—</span>}
                         </td>
                         <td style={{textAlign:'right'}}>
-                          {fa !== 'all' ? (
-                            <span style={{fontFamily:'var(--fh)',fontWeight:800,fontSize:13,
-                              color: bal>0?'var(--red)':bal<0?'var(--green)':'var(--ink3)'}}>
-                              {bal===0 ? '✓ Clear' : bal>0 ? fmt(bal) : `+${fmt(Math.abs(bal))}`}
-                            </span>
-                          ) : (
-                            <span style={{color:'var(--ink4)',fontSize:12}}>—</span>
-                          )}
+                          {(() => {
+                            // Show remaining for each account involved
+                            const remFrom = remainingMap[r.id + '__' + r.fromAccountId];
+                            const remTo   = remainingMap[r.id + '__' + r.toAccountId];
+                            const show = fa !== 'all'
+                              ? remainingMap[r.id + '__' + fa]
+                              : null; // all-accounts view — show both
+                            if (fa !== 'all' && show) {
+                              const pct = show.capacity > 0 ? Math.min(100, Math.max(0, (show.rem / show.capacity) * 100)) : null;
+                              const color = show.rem < 0 ? 'var(--red)' : show.rem < show.capacity * 0.1 ? 'var(--amber)' : 'var(--green)';
+                              return (
+                                <div style={{textAlign:'right'}}>
+                                  <div style={{fontFamily:'var(--fh)',fontWeight:800,fontSize:13,color}}>{fmt(show.rem)}</div>
+                                  {pct!==null && <div style={{fontSize:10,color:'var(--ink4)',marginTop:2}}>{Math.round(pct)}% left</div>}
+                                </div>
+                              );
+                            }
+                            // All-accounts view: show both affected accounts' remaining
+                            return (
+                              <div style={{display:'flex',flexDirection:'column',gap:3,alignItems:'flex-end'}}>
+                                {remFrom && <div style={{fontSize:11,fontWeight:700,color:remFrom.rem<0?'var(--red)':'var(--green)'}}>{remFrom.accName}: {fmt(remFrom.rem)}</div>}
+                                {remTo   && <div style={{fontSize:11,fontWeight:700,color:remTo.rem<0?'var(--red)':'var(--green)'}}>{remTo.accName}: {fmt(remTo.rem)}</div>}
+                              </div>
+                            );
+                          })()}
                         </td>
                         <td>
                           <div style={{display:'flex',gap:7}}>
@@ -1323,7 +1350,7 @@ function Transactions({ user, friends, accounts, transactions, settlements, show
                   // Regular transaction row
                   const f = fMap[r.friendId];
                   const a = aMap[r.accountId];
-                  const bal = r._running;
+                  const remInfo = remainingMap[r.id]; // remaining in this account after this txn
                   const isCredit = r.type === 'payment';
                   const amtColor = r.type==='payment' ? 'var(--green)' : r.type==='personal' ? 'var(--amber)' : 'var(--red)';
 
@@ -1358,16 +1385,33 @@ function Transactions({ user, friends, accounts, transactions, settlements, show
                         {r.note||'—'}
                       </td>
                       <td style={{textAlign:'right'}}>
-                        <span style={{
-                          display:'inline-block', minWidth:80, textAlign:'right',
-                          fontFamily:'var(--fh)', fontWeight:800, fontSize:13,
-                          color: bal > 0 ? 'var(--red)' : bal < 0 ? 'var(--green)' : 'var(--ink3)',
-                          background: bal > 0 ? 'var(--redbg)' : bal < 0 ? 'var(--greenbg)' : 'var(--bg2)',
-                          border: `1px solid ${bal > 0 ? 'var(--redbrd)' : bal < 0 ? 'var(--greenbrd)' : 'var(--border)'}`,
-                          borderRadius: 20, padding: '3px 10px',
-                        }}>
-                          {bal === 0 ? '✓ Clear' : bal > 0 ? fmt(bal) : `+${fmt(Math.abs(bal))}`}
-                        </span>
+                        {remInfo ? (() => {
+                          const { rem, capacity, accType } = remInfo;
+                          const pct = capacity > 0 ? Math.min(100, Math.max(0, (rem / capacity) * 100)) : null;
+                          const isOverLimit = rem < 0;
+                          const isLow = !isOverLimit && pct !== null && pct < 10;
+                          const color = isOverLimit ? 'var(--red)' : isLow ? 'var(--amber)' : 'var(--green)';
+                          const bg    = isOverLimit ? 'var(--redbg)' : isLow ? 'var(--amberbg)' : 'var(--greenbg)';
+                          const bdr   = isOverLimit ? 'var(--redbrd)' : isLow ? 'var(--amberbrd)' : 'var(--greenbrd)';
+                          return (
+                            <div style={{textAlign:'right'}}>
+                              <span style={{
+                                display:'inline-block', fontFamily:'var(--fh)',
+                                fontWeight:800, fontSize:13, color,
+                                background:bg, border:`1px solid ${bdr}`,
+                                borderRadius:20, padding:'3px 10px',
+                                whiteSpace:'nowrap',
+                              }}>
+                                {isOverLimit ? `⚠ -${fmt(Math.abs(rem))}` : fmt(rem)}
+                              </span>
+                              {pct !== null && (
+                                <div style={{fontSize:10,color:'var(--ink4)',marginTop:3}}>
+                                  {accType==='credit_card' ? `${Math.round(pct)}% available` : `${Math.round(pct)}% left`}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })() : <span style={{color:'var(--ink4)'}}>—</span>}
                       </td>
                       <td>
                         <div style={{display:'flex',gap:7}}>
@@ -1384,21 +1428,21 @@ function Transactions({ user, friends, accounts, transactions, settlements, show
 
           {/* Footer summary bar */}
           {(() => {
-            const finalBal = displayRows.length > 0 ? displayRows[0]._running : 0;
             const totalDebit  = displayRows.filter(r=>r._kind==='txn'&&r.type!=='payment').reduce((s,r)=>s+Number(r.amount),0);
             const totalCredit = displayRows.filter(r=>r._kind==='txn'&&r.type==='payment').reduce((s,r)=>s+Number(r.amount),0);
             const settleCount = displayRows.filter(r=>r._kind==='settle').length;
+            const netSpend    = totalDebit - totalCredit;
             return (
               <div style={{
                 display:'grid', gridTemplateColumns:'1fr 1fr 1fr 1fr', gap:1,
                 borderTop:'2px solid var(--border)', background:'var(--bg)',
               }}>
                 {[
-                  {lbl:'Total Spent', val:fmt(totalDebit), color:'var(--red)'},
-                  {lbl:'Total Received', val:fmt(totalCredit), color:'var(--green)'},
-                  {lbl:'Settlements', val:`${settleCount} entries`, color:'var(--ind)'},
-                  {lbl:'Net Balance', val: finalBal===0?'✓ Clear': finalBal>0?fmt(finalBal):`+${fmt(Math.abs(finalBal))}`,
-                   color: finalBal>0?'var(--red)':finalBal<0?'var(--green)':'var(--ink3)'},
+                  {lbl:'Total Spent',     val:fmt(totalDebit),  color:'var(--red)'},
+                  {lbl:'Total Received',  val:fmt(totalCredit), color:'var(--green)'},
+                  {lbl:'Settlements',     val:`${settleCount} entries`, color:'var(--ind)'},
+                  {lbl:'Net Spend',       val:fmt(netSpend),
+                   color: netSpend>0?'var(--red)':netSpend<0?'var(--green)':'var(--ink3)'},
                 ].map(({lbl,val,color})=>(
                   <div key={lbl} style={{padding:'14px 18px',textAlign:'center'}}>
                     <div style={{fontSize:10,fontWeight:700,color:'var(--ink4)',textTransform:'uppercase',letterSpacing:'0.07em',marginBottom:4}}>{lbl}</div>
