@@ -1145,29 +1145,30 @@ function Transactions({ user, friends, accounts, transactions, settlements, show
   });
 
   // ── Pre-compute per-account remaining balance after every entry ──────────
-  // For each account, sort ALL its txns+settlements oldest→newest,
-  // then track remaining = capacity + credits - debits at each point.
-  const remainingMap = {}; // key: txnId or "settleId_accId" → remaining after that entry
+  // ── Stable sort helper: date asc, then doc ID asc (consistent tiebreaker) ──
+  const stableAsc  = (a, b) => a._date.localeCompare(b._date) || (a._id||'').localeCompare(b._id||'');
+  const stableDesc = (a, b) => b._date.localeCompare(a._date) || (b._id||'').localeCompare(a._id||'');
+
+  // ── Per-account remaining balance after every entry ──────────────────────
+  // Sort ALL entries for an account oldest→newest (same stable key as display),
+  // then track capacity - cumulative debits + credits at each point.
+  const remainingMap = {}; // key: txnId or "settleId__accId" → { rem, capacity, accType, accName }
   accounts.forEach(acc => {
     const capacity = acc.type === 'credit_card' ? (acc.limit || 0) : (acc.balance || 0);
-    // Gather every entry touching this account
     const accEntries = [
       ...transactions.filter(t => t.accountId === acc.id).map(t => ({
-        key: t.id,
-        _date: t.date || '',
+        key: t.id, _id: t.id, _date: t.date || '',
+        // credit card: spending = reduces available credit; payment back = restores it
+        // bank account: spending = reduces balance; incoming payment = adds to balance
         delta: t.type === 'payment' ? Number(t.amount) : -Number(t.amount),
-        // payment = money received = +, expense/personal = money spent = -
       })),
       ...(settlements||[])
         .filter(s => s.fromAccountId === acc.id || s.toAccountId === acc.id)
         .map(s => ({
-          key: s.id + '__' + acc.id,
-          _date: s.date || '',
-          // money flowing INTO this account (e.g. someone pays off CC, or bank receives) = +
-          // money flowing OUT (cash/bank paying for CC bill) = -
+          key: s.id + '__' + acc.id, _id: s.id, _date: s.date || '',
           delta: s.toAccountId === acc.id ? Number(s.amount) : -Number(s.amount),
         })),
-    ].sort((a, b) => a._date.localeCompare(b._date));
+    ].sort(stableAsc); // ← same stable key used for display
 
     let rem = capacity;
     accEntries.forEach(entry => {
@@ -1176,8 +1177,10 @@ function Transactions({ user, friends, accounts, transactions, settlements, show
     });
   });
 
-  // Display newest first
-  const displayRows = [...rows].sort((a,b) => b._date.localeCompare(a._date));
+  // Display newest first — SAME stable sort, reversed, so remainingMap keys align
+  const displayRows = [...rows]
+    .map(r => ({ ...r, _id: r.id })) // ensure _id exists for stable sort
+    .sort(stableDesc);
 
   const clear = () => { setFF('all'); setFA('all'); setFT('all'); setFrom(''); setTo(''); };
   const hasFilter = ff !== 'all' || fa !== 'all' || ft !== 'all' || from || to;
