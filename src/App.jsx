@@ -856,7 +856,7 @@ function AppShell({ user, onLogout }) {
       <div className="app-body">
         <div className="page-content">
           {tab==='dashboard'    && <Dashboard    user={user} friends={friends} accounts={accounts} transactions={transactions} settlements={settlements} setTab={setTab}/>}
-          {tab==='transactions' && <Transactions user={user} friends={friends} accounts={accounts} transactions={transactions} showToast={showToast}/>}
+          {tab==='transactions' && <Transactions user={user} friends={friends} accounts={accounts} transactions={transactions} settlements={settlements} showToast={showToast}/>}
           {tab==='friends'      && <Friends      user={user} friends={friends} accounts={accounts} transactions={transactions} showToast={showToast}/>}
           {tab==='accounts'     && <Accounts     user={user} accounts={accounts} transactions={transactions} settlements={settlements} friends={friends} showToast={showToast}/>}
           {tab==='settlements'  && <SettlementsPage user={user} accounts={accounts} settlements={settlements} showToast={showToast} onNew={()=>setSettleForm(true)}/>}
@@ -1103,7 +1103,7 @@ function Dashboard({ user, friends, accounts, transactions, settlements, setTab 
 // ═══════════════════════════════════════════════════════════════════════════════
 // ─── TRANSACTIONS ─────────────────────────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════════════════════════
-function Transactions({ user, friends, accounts, transactions, showToast }) {
+function Transactions({ user, friends, accounts, transactions, settlements, showToast }) {
   const [showForm,setShowForm] = useState(false);
   const [editTxn,setEditTxn]   = useState(null);
   const [ff,setFF]  = useState('all');
@@ -1115,20 +1115,73 @@ function Transactions({ user, friends, accounts, transactions, showToast }) {
   const fMap = Object.fromEntries(friends.map(f=>[f.id,f]));
   const aMap = Object.fromEntries(accounts.map(a=>[a.id,a]));
 
-  let rows=[...transactions].sort((a,b)=>b.date?.localeCompare(a.date));
-  if(ff!=='all') rows=rows.filter(t=>t.friendId===ff);
-  if(fa!=='all') rows=rows.filter(t=>t.accountId===fa);
-  if(ft!=='all') rows=rows.filter(t=>t.type===ft);
-  if(from) rows=rows.filter(t=>t.date>=from);
-  if(to)   rows=rows.filter(t=>t.date<=to);
+  // Merge transactions + settlements into a unified list
+  const allRows = [
+    ...transactions.map(t => ({
+      ...t, _kind: 'txn',
+      _date: t.date || '',
+      _sortAmt: t.type === 'payment' ? Number(t.amount) : -Number(t.amount),
+    })),
+    ...(settlements||[]).map(s => ({
+      ...s, _kind: 'settle',
+      _date: s.date || '',
+      _sortAmt: 0, // settlements are internal transfers; net 0 for global balance
+      type: 'settlement',
+    })),
+  ];
 
-  const clear=()=>{setFF('all');setFA('all');setFT('all');setFrom('');setTo('');};
-  const hasFilter=ff!=='all'||fa!=='all'||ft!=='all'||from||to;
+  // Apply filters (settlements only filtered by date + account)
+  let rows = allRows.filter(r => {
+    if (ft !== 'all' && r._kind === 'settle') return false; // settlements hidden when type filter active
+    if (ft !== 'all' && r._kind === 'txn' && r.type !== ft) return false;
+    if (ff !== 'all' && r._kind === 'txn' && r.friendId !== ff) return false;
+    if (fa !== 'all') {
+      if (r._kind === 'txn' && r.accountId !== fa) return false;
+      if (r._kind === 'settle' && r.fromAccountId !== fa && r.toAccountId !== fa) return false;
+    }
+    if (from && r._date < from) return false;
+    if (to   && r._date > to)   return false;
+    return true;
+  });
 
-  const del=async(id)=>{
-    if(!window.confirm('Delete this transaction?'))return;
-    try{await deleteDoc(doc(db,'transactions',id));showToast('Transaction deleted');}
-    catch{showToast('Delete failed','error');}
+  // Sort all rows oldest→newest to compute running balance
+  const sorted = [...rows].sort((a,b) => a._date.localeCompare(b._date) || 0);
+
+  // Compute running balance: for transactions credit = +, debit = -
+  // For settlements: if filtering by specific account, in = +, out = -; else skip settlement contribution
+  let running = 0;
+  const withBal = sorted.map(r => {
+    let delta = 0;
+    if (r._kind === 'txn') {
+      delta = r.type === 'payment' ? Number(r.amount) : -Number(r.amount);
+    } else if (r._kind === 'settle') {
+      if (fa !== 'all') {
+        // Account-specific view: settlements in/out matter
+        delta = r.toAccountId === fa ? Number(r.amount) : -Number(r.amount);
+      }
+      // Global view: settlements are internal—no net effect on overall balance
+    }
+    running += delta;
+    return { ...r, _running: running };
+  });
+
+  // Display newest first
+  const displayRows = [...withBal].reverse();
+
+  const clear = () => { setFF('all'); setFA('all'); setFT('all'); setFrom(''); setTo(''); };
+  const hasFilter = ff !== 'all' || fa !== 'all' || ft !== 'all' || from || to;
+  const totalTxns = transactions.length + (settlements||[]).length;
+
+  const del = async(id) => {
+    if(!window.confirm('Delete this transaction?')) return;
+    try{ await deleteDoc(doc(db,'transactions',id)); showToast('Transaction deleted'); }
+    catch{ showToast('Delete failed','error'); }
+  };
+
+  const delSettle = async(id) => {
+    if(!window.confirm('Delete this settlement?')) return;
+    try{ await deleteDoc(doc(db,'settlements',id)); showToast('Settlement deleted'); }
+    catch{ showToast('Delete failed','error'); }
   };
 
   return (
@@ -1136,7 +1189,7 @@ function Transactions({ user, friends, accounts, transactions, showToast }) {
       <div className="page-head">
         <div>
           <div className="page-title">Transactions</div>
-          <div className="page-sub">{rows.length} of {transactions.length} records</div>
+          <div className="page-sub">{displayRows.length} of {totalTxns} records</div>
         </div>
         <div className="page-actions">
           <button className="btn btn-primary" onClick={()=>{setEditTxn(null);setShowForm(true);}}>
@@ -1149,10 +1202,11 @@ function Transactions({ user, friends, accounts, transactions, showToast }) {
       <div className="acc-tabs">
         <button className={`acc-tab ${fa==='all'?'active':''}`} onClick={()=>setFA('all')}>
           🏦 All Accounts
-          <span className="acc-tab-count">{transactions.length}</span>
+          <span className="acc-tab-count">{totalTxns}</span>
         </button>
         {accounts.map(a=>{
-          const cnt = transactions.filter(t=>t.accountId===a.id).length;
+          const cnt = transactions.filter(t=>t.accountId===a.id).length
+                    + (settlements||[]).filter(s=>s.fromAccountId===a.id||s.toAccountId===a.id).length;
           return (
             <button key={a.id} className={`acc-tab ${fa===a.id?'active':''}`} onClick={()=>setFA(a.id)}>
               {a.type==='credit_card'?'💳':'🏦'} {a.name}
@@ -1180,33 +1234,113 @@ function Transactions({ user, friends, accounts, transactions, showToast }) {
         <input className="filter-select filter-date" type="date" value={from} onChange={e=>setFrom(e.target.value)} title="From"/>
         <input className="filter-select filter-date" type="date" value={to}   onChange={e=>setTo(e.target.value)}   title="To"/>
         {hasFilter && <button className="filter-clear" onClick={clear}>✕ Clear filters</button>}
-        <span className="filter-count">{rows.length} result{rows.length!==1?'s':''}</span>
+        <span className="filter-count">{displayRows.length} result{displayRows.length!==1?'s':''}</span>
       </div>
 
-      {rows.length===0?(
+      {/* Balance explanation note */}
+      <div style={{
+        display:'flex', alignItems:'center', gap:8, marginBottom:14,
+        fontSize:12, color:'var(--ink3)', fontWeight:400
+      }}>
+        <span style={{background:'var(--indbg)',border:'1px solid var(--indbrd)',borderRadius:6,padding:'2px 8px',fontSize:11,fontWeight:700,color:'var(--ind)'}}>🔄 Settlement</span>
+        rows are transfers between accounts · Balance = cumulative net{fa!=='all'?' for this account':' across all activity'}
+        {fa==='all' && <span style={{color:'var(--ink4)'}}> (settlements don't affect global balance)</span>}
+      </div>
+
+      {displayRows.length===0?(
         <div className="tbl-card"><div className="empty"><div className="empty-icon">💳</div><div className="empty-title">No transactions found</div><div className="empty-sub">Try adjusting your filters</div></div></div>
       ):(
         <div className="tbl-card">
           <div className="tbl-wrap">
             <table>
               <thead>
-                <tr><th>Date</th><th>Type</th><th>Friend / Party</th><th>Account</th><th>Amount</th><th>Note</th><th>Actions</th></tr>
+                <tr>
+                  <th>Date</th>
+                  <th>Type</th>
+                  <th>Friend / Party</th>
+                  <th>Account</th>
+                  <th style={{textAlign:'right'}}>Amount</th>
+                  <th>Note</th>
+                  <th style={{textAlign:'right'}}>Balance</th>
+                  <th>Actions</th>
+                </tr>
               </thead>
               <tbody>
-                {rows.map(t=>{
-                  const f=fMap[t.friendId], a=aMap[t.accountId];
-                  return(
-                    <tr key={t.id}>
-                      <td className="td-muted">{fmtDate(t.date)}</td>
+                {displayRows.map((r,i) => {
+                  const isSettle = r._kind === 'settle';
+
+                  if (isSettle) {
+                    const fromAcc = aMap[r.fromAccountId];
+                    const toAcc   = aMap[r.toAccountId];
+                    const bal = r._running;
+                    return (
+                      <tr key={r.id+'-s'} style={{background:'#faf5ff'}}>
+                        <td className="td-muted">{fmtDate(r._date)}</td>
+                        <td><span className="txn-settle">🔄 Settlement</span></td>
+                        <td>
+                          <div style={{display:'flex',alignItems:'center',gap:7,flexWrap:'wrap'}}>
+                            <span style={{fontSize:13,fontWeight:600,color:'var(--ink2)'}}>
+                              {fromAcc?.name||'?'} → {toAcc?.name||'?'}
+                            </span>
+                          </div>
+                        </td>
+                        <td>
+                          <div style={{display:'flex',alignItems:'center',gap:5,flexWrap:'wrap'}}>
+                            <span style={{fontSize:13}}>
+                              {fromAcc?.type==='credit_card'?'💳':'🏦'} {fromAcc?.name||'—'}
+                            </span>
+                            <span style={{color:'var(--ind)',fontWeight:700}}>→</span>
+                            <span style={{fontSize:13}}>
+                              {toAcc?.type==='credit_card'?'💳':'🏦'} {toAcc?.name||'—'}
+                            </span>
+                          </div>
+                        </td>
+                        <td style={{textAlign:'right',fontWeight:700,color:'var(--ind)',fontFamily:'var(--fh)',fontSize:14}}>
+                          ⇄ {fmt(r.amount)}
+                        </td>
+                        <td className="td-muted" style={{maxWidth:160,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+                          {r.note||<span style={{color:'var(--ink4)'}}>—</span>}
+                        </td>
+                        <td style={{textAlign:'right'}}>
+                          {fa !== 'all' ? (
+                            <span style={{fontFamily:'var(--fh)',fontWeight:800,fontSize:13,
+                              color: bal>0?'var(--red)':bal<0?'var(--green)':'var(--ink3)'}}>
+                              {bal===0 ? '✓ Clear' : bal>0 ? fmt(bal) : `+${fmt(Math.abs(bal))}`}
+                            </span>
+                          ) : (
+                            <span style={{color:'var(--ink4)',fontSize:12}}>—</span>
+                          )}
+                        </td>
+                        <td>
+                          <div style={{display:'flex',gap:7}}>
+                            <button className="btn btn-danger btn-sm btn-icon" onClick={()=>delSettle(r.id)}><IcoTrash/></button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  }
+
+                  // Regular transaction row
+                  const f = fMap[r.friendId];
+                  const a = aMap[r.accountId];
+                  const bal = r._running;
+                  const isCredit = r.type === 'payment';
+                  const amtColor = r.type==='payment' ? 'var(--green)' : r.type==='personal' ? 'var(--amber)' : 'var(--red)';
+
+                  return (
+                    <tr key={r.id}>
+                      <td className="td-muted">{fmtDate(r._date)}</td>
                       <td>
-                        {t.type==='personal'?<span className="txn-personal">Personal</span>
-                        :t.type==='expense'?<span className="txn-expense">Friend Exp</span>
-                        :<span className="txn-payment">Payment In</span>}
+                        {r.type==='personal' ? <span className="txn-personal">Personal</span>
+                        : r.type==='expense'  ? <span className="txn-expense">Friend Exp</span>
+                        : <span className="txn-payment">Payment In</span>}
                       </td>
                       <td>
-                        {t.type==='personal'?<span style={{color:'var(--amber)',fontWeight:600,fontSize:13}}>🧾 Self</span>:(
+                        {r.type==='personal' ? (
+                          <span style={{color:'var(--amber)',fontWeight:600,fontSize:13}}>🧾 Self</span>
+                        ) : (
                           <div style={{display:'flex',alignItems:'center',gap:9}}>
-                            {f&&<div style={{width:30,height:30,borderRadius:'50%',background:f.color||colorFor(f.name),display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:900,color:'white',fontFamily:'var(--fh)',flexShrink:0}}>{initials(f.name)}</div>}
+                            {f && <div style={{width:30,height:30,borderRadius:'50%',background:f.color||colorFor(f.name),display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:800,color:'white',flexShrink:0}}>{initials(f.name)}</div>}
                             <span className="td-bold">{f?.name||'—'}</span>
                           </div>
                         )}
@@ -1217,14 +1351,28 @@ function Transactions({ user, friends, accounts, transactions, showToast }) {
                           <span className="td-muted">{a?.name||'—'}</span>
                         </div>
                       </td>
-                      <td style={{fontWeight:700,color:t.type==='payment'?'var(--green)':t.type==='personal'?'var(--amber)':'var(--red)',fontFamily:'var(--fh)',fontSize:14}}>
-                        {t.type==='payment'?'+':'-'}{fmt(t.amount)}
+                      <td style={{textAlign:'right',fontWeight:700,color:amtColor,fontFamily:'var(--fh)',fontSize:14}}>
+                        {isCredit?'+':'-'}{fmt(r.amount)}
                       </td>
-                      <td className="td-muted" style={{maxWidth:200,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{t.note||'—'}</td>
+                      <td className="td-muted" style={{maxWidth:200,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+                        {r.note||'—'}
+                      </td>
+                      <td style={{textAlign:'right'}}>
+                        <span style={{
+                          display:'inline-block', minWidth:80, textAlign:'right',
+                          fontFamily:'var(--fh)', fontWeight:800, fontSize:13,
+                          color: bal > 0 ? 'var(--red)' : bal < 0 ? 'var(--green)' : 'var(--ink3)',
+                          background: bal > 0 ? 'var(--redbg)' : bal < 0 ? 'var(--greenbg)' : 'var(--bg2)',
+                          border: `1px solid ${bal > 0 ? 'var(--redbrd)' : bal < 0 ? 'var(--greenbrd)' : 'var(--border)'}`,
+                          borderRadius: 20, padding: '3px 10px',
+                        }}>
+                          {bal === 0 ? '✓ Clear' : bal > 0 ? fmt(bal) : `+${fmt(Math.abs(bal))}`}
+                        </span>
+                      </td>
                       <td>
                         <div style={{display:'flex',gap:7}}>
-                          <button className="btn btn-ghost btn-sm btn-icon" onClick={()=>{setEditTxn(t);setShowForm(true);}}><IcoEdit/></button>
-                          <button className="btn btn-danger btn-sm btn-icon" onClick={()=>del(t.id)}><IcoTrash/></button>
+                          <button className="btn btn-ghost btn-sm btn-icon" onClick={()=>{setEditTxn(r);setShowForm(true);}}><IcoEdit/></button>
+                          <button className="btn btn-danger btn-sm btn-icon" onClick={()=>del(r.id)}><IcoTrash/></button>
                         </div>
                       </td>
                     </tr>
@@ -1233,6 +1381,33 @@ function Transactions({ user, friends, accounts, transactions, showToast }) {
               </tbody>
             </table>
           </div>
+
+          {/* Footer summary bar */}
+          {(() => {
+            const finalBal = displayRows.length > 0 ? displayRows[0]._running : 0;
+            const totalDebit  = displayRows.filter(r=>r._kind==='txn'&&r.type!=='payment').reduce((s,r)=>s+Number(r.amount),0);
+            const totalCredit = displayRows.filter(r=>r._kind==='txn'&&r.type==='payment').reduce((s,r)=>s+Number(r.amount),0);
+            const settleCount = displayRows.filter(r=>r._kind==='settle').length;
+            return (
+              <div style={{
+                display:'grid', gridTemplateColumns:'1fr 1fr 1fr 1fr', gap:1,
+                borderTop:'2px solid var(--border)', background:'var(--bg)',
+              }}>
+                {[
+                  {lbl:'Total Spent', val:fmt(totalDebit), color:'var(--red)'},
+                  {lbl:'Total Received', val:fmt(totalCredit), color:'var(--green)'},
+                  {lbl:'Settlements', val:`${settleCount} entries`, color:'var(--ind)'},
+                  {lbl:'Net Balance', val: finalBal===0?'✓ Clear': finalBal>0?fmt(finalBal):`+${fmt(Math.abs(finalBal))}`,
+                   color: finalBal>0?'var(--red)':finalBal<0?'var(--green)':'var(--ink3)'},
+                ].map(({lbl,val,color})=>(
+                  <div key={lbl} style={{padding:'14px 18px',textAlign:'center'}}>
+                    <div style={{fontSize:10,fontWeight:700,color:'var(--ink4)',textTransform:'uppercase',letterSpacing:'0.07em',marginBottom:4}}>{lbl}</div>
+                    <div style={{fontFamily:'var(--fh)',fontWeight:800,fontSize:16,color}}>{val}</div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
         </div>
       )}
 
