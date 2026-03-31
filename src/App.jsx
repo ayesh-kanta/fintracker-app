@@ -1130,9 +1130,10 @@ function Transactions({ user, friends, accounts, transactions, settlements, show
     })),
   ];
 
-  // Apply filters (settlements only filtered by date + account)
+  // Apply filters (settlements only filtered by date + account; hidden when friend filter active)
   let rows = allRows.filter(r => {
-    if (ft !== 'all' && r._kind === 'settle') return false; // settlements hidden when type filter active
+    if (r._kind === 'settle' && ff !== 'all') return false; // hide settlements when filtering by friend
+    if (ft !== 'all' && r._kind === 'settle') return false; // hide settlements when type filter active
     if (ft !== 'all' && r._kind === 'txn' && r.type !== ft) return false;
     if (ff !== 'all' && r._kind === 'txn' && r.friendId !== ff) return false;
     if (fa !== 'all') {
@@ -1573,7 +1574,8 @@ function Friends({ user, friends, accounts, transactions, showToast }) {
   const [editF, setEditF]       = useState(null);
   const [form, setForm]         = useState({ name: '', phone: '' });
   const [saving, setSaving]     = useState(false);
-  const [expanded, setExpanded] = useState(null); // friend id
+  const [expanded, setExpanded] = useState(null);
+  const [search, setSearch]     = useState('');
   const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
   const aMap = Object.fromEntries(accounts.map(a => [a.id, a]));
 
@@ -1607,7 +1609,6 @@ function Friends({ user, friends, accounts, transactions, showToast }) {
     const given    = transactions.filter(t => t.friendId === f.id && t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0);
     const received = transactions.filter(t => t.friendId === f.id && t.type === 'payment').reduce((s, t) => s + Number(t.amount), 0);
     const history  = transactions.filter(t => t.friendId === f.id).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-    // per-account breakdown
     const byAccount = accounts.map(a => {
       const aGiven = history.filter(t => t.accountId === a.id && t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0);
       const aRecvd = history.filter(t => t.accountId === a.id && t.type === 'payment').reduce((s, t) => s + Number(t.amount), 0);
@@ -1617,6 +1618,12 @@ function Friends({ user, friends, accounts, transactions, showToast }) {
   });
 
   const totalPending = withStats.reduce((s, f) => s + Math.max(0, f.balance), 0);
+
+  // Apply search filter
+  const q = search.trim().toLowerCase();
+  const filtered = q
+    ? withStats.filter(f => f.name.toLowerCase().includes(q) || (f.phone||'').includes(q))
+    : withStats;
 
   return (
     <div>
@@ -1632,6 +1639,35 @@ function Friends({ user, friends, accounts, transactions, showToast }) {
           <IcoPlus /> Add Friend
         </button>
       </div>
+
+      {/* Search bar */}
+      <div style={{ marginBottom: 20, position: 'relative', maxWidth: 360 }}>
+        <span style={{
+          position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)',
+          fontSize: 15, color: 'var(--ink4)', pointerEvents: 'none',
+        }}>🔍</span>
+        <input
+          className="field-input"
+          style={{ paddingLeft: 38, borderRadius: 22 }}
+          placeholder="Search friends by name or phone…"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+        />
+        {search && (
+          <button onClick={() => setSearch('')} style={{
+            position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
+            background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ink4)',
+            fontSize: 16, lineHeight: 1,
+          }}>✕</button>
+        )}
+      </div>
+      {q && (
+        <div style={{ marginBottom: 14, fontSize: 13, color: 'var(--ink3)' }}>
+          {filtered.length === 0
+            ? `No friends match "${search}"`
+            : `${filtered.length} of ${friends.length} friends`}
+        </div>
+      )}
 
       {/* Add / Edit form */}
       {showForm && (
@@ -1666,6 +1702,14 @@ function Friends({ user, friends, accounts, transactions, showToast }) {
             <div className="empty-sub">Add your first friend to start tracking expenses</div>
           </div>
         </div>
+      ) : filtered.length === 0 ? (
+        <div className="tbl-card">
+          <div className="empty">
+            <div className="empty-icon">🔍</div>
+            <div className="empty-title">No results for "{search}"</div>
+            <div className="empty-sub">Try a different name or phone number</div>
+          </div>
+        </div>
       ) : (
         <div className="friends-list">
 
@@ -1679,7 +1723,7 @@ function Friends({ user, friends, accounts, transactions, showToast }) {
           </div>
 
           {/* One row per friend */}
-          {withStats.map(f => {
+          {filtered.map(f => {
             const isOpen = expanded === f.id;
             const balClass = f.balance > 0 ? 'bal-pos' : f.balance < 0 ? 'bal-neg' : 'bal-zero';
 
@@ -2434,16 +2478,16 @@ const SETTLE_METHODS = [
   { key: 'credit_card',  label: 'Credit Card',  icon: '💳', desc: 'Card bill payment' },
 ];
 
-function SettlementModal({ userId, accounts, onClose, onSaved }) {
+function SettlementModal({ userId, accounts, existing, onClose, onSaved }) {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
-    fromType:      'cash',
-    fromAccountId: '',
-    toType:        'credit_card',
-    toAccountId:   '',
-    amount:        '',
-    date:          today(),
-    note:          '',
+    fromType:      existing?.fromType      || 'cash',
+    fromAccountId: existing?.fromAccountId || '',
+    toType:        existing?.toType        || 'credit_card',
+    toAccountId:   existing?.toAccountId   || '',
+    amount:        existing?.amount        ? String(existing.amount) : '',
+    date:          existing?.date          || today(),
+    note:          existing?.note          || '',
   });
   const set = k => v => setForm(f => ({ ...f, [k]: v }));
   const setE = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
@@ -2469,7 +2513,7 @@ function SettlementModal({ userId, accounts, onClose, onSaved }) {
     if (isNaN(amt) || amt <= 0) { alert('Enter a valid amount'); return; }
     setSaving(true);
     try {
-      await addDoc(collection(db, 'settlements'), {
+      const data = {
         userId,
         fromType:      form.fromType,
         fromAccountId: form.fromType === 'cash' ? null : form.fromAccountId,
@@ -2479,8 +2523,14 @@ function SettlementModal({ userId, accounts, onClose, onSaved }) {
         date:          form.date,
         note:          form.note,
         label:         settlementLabel(),
-      });
-      onSaved('Settlement recorded ✓');
+      };
+      if (existing) {
+        await updateDoc(doc(db, 'settlements', existing.id), data);
+        onSaved('Settlement updated ✓');
+      } else {
+        await addDoc(collection(db, 'settlements'), data);
+        onSaved('Settlement recorded ✓');
+      }
     } catch (err) { alert('Save failed'); console.error(err); }
     finally { setSaving(false); }
   };
@@ -2493,7 +2543,7 @@ function SettlementModal({ userId, accounts, onClose, onSaved }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 18 }}>
             <div style={{ width: 44, height: 44, borderRadius: 13, background: 'var(--indbg)', border: '1px solid var(--indbrd)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>🔄</div>
             <div>
-              <div className="modal-title" style={{ marginBottom: 0 }}>Record Settlement</div>
+              <div className="modal-title" style={{ marginBottom: 0 }}>{existing ? 'Edit Settlement' : 'Record Settlement'}</div>
               <div className="modal-sub" style={{ marginBottom: 0 }}>Log a payment between any two accounts or cash</div>
             </div>
           </div>
@@ -2594,7 +2644,7 @@ function SettlementModal({ userId, accounts, onClose, onSaved }) {
               <button type="button" className="btn btn-ghost" onClick={onClose} style={{ flex: 1 }}>Cancel</button>
               <button type="submit" className="btn" disabled={saving}
                 style={{ flex: 2, background: 'var(--ind)', color: 'white', boxShadow: '0 2px 10px rgba(79,70,229,0.3)' }}>
-                {saving ? 'Saving…' : '🔄 Record Settlement'}
+                {saving ? 'Saving…' : existing ? '🔄 Update Settlement' : '🔄 Record Settlement'}
               </button>
             </div>
           </form>
@@ -2610,6 +2660,7 @@ function SettlementModal({ userId, accounts, onClose, onSaved }) {
 function SettlementsPage({ user, accounts, settlements, showToast, onNew }) {
   const [filterFrom, setFrom] = useState('');
   const [filterTo,   setTo]   = useState('');
+  const [editSettle, setEditSettle] = useState(null);
   const aMap = Object.fromEntries(accounts.map(a => [a.id, a]));
 
   const del = async (id) => {
@@ -2767,7 +2818,10 @@ function SettlementsPage({ user, accounts, settlements, showToast, onNew }) {
                       {s.note || '—'}
                     </td>
                     <td>
-                      <button className="btn btn-danger btn-sm btn-icon" onClick={() => del(s.id)} title="Delete"><IcoTrash /></button>
+                      <div style={{display:'flex',gap:7}}>
+                        <button className="btn btn-ghost btn-sm btn-icon" onClick={() => setEditSettle(s)} title="Edit"><IcoEdit /></button>
+                        <button className="btn btn-danger btn-sm btn-icon" onClick={() => del(s.id)} title="Delete"><IcoTrash /></button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -2776,10 +2830,18 @@ function SettlementsPage({ user, accounts, settlements, showToast, onNew }) {
           </div>
         </div>
       )}
+
+      {/* Edit modal */}
+      {editSettle && (
+        <SettlementModal
+          userId={user.id} accounts={accounts} existing={editSettle}
+          onClose={() => setEditSettle(null)}
+          onSaved={msg => { setEditSettle(null); showToast(msg); }}
+        />
+      )}
     </div>
   );
-}
-export default function App() {
+} {
   const [user,setUser]     = useState(null);
   const [booting,setBooting] = useState(true);
 
