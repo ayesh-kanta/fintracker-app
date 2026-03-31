@@ -2841,7 +2841,8 @@ function SettlementsPage({ user, accounts, settlements, showToast, onNew }) {
       )}
     </div>
   );
-} {
+}
+export default function App() {
   const [user,setUser]     = useState(null);
   const [booting,setBooting] = useState(true);
 
